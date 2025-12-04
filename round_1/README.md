@@ -32,11 +32,12 @@ cd vibelympics/round_1
 # Build the container
 docker build -t linky-security .
 
-# Run the container
-docker run -p 3000:3000 linky-security
+# Run the container (HTTP + HTTPS)
+docker run -p 3000:3000 -p 3443:3443 linky-security
 
 # Open in browser
-# http://localhost:3000
+# HTTP:  http://localhost:3000
+# HTTPS: https://localhost:3443 (accept self-signed cert warning)
 ```
 
 ### Alternative: Local Development
@@ -47,9 +48,10 @@ cd round_1
 npm install
 npm run dev
 
-# Frontend: http://localhost:5173
-# Backend: http://localhost:3000
+# Open http://localhost:5173 in your browser
 ```
+
+> **Note**: In dev mode, the frontend runs on port 5173 (Vite) and proxies API calls to port 3000 (Express). In production/Docker, everything runs on port 3000.
 
 ---
 
@@ -81,6 +83,50 @@ Linky's Security Dashboard displays container security information using **only 
 - 🎩 **Hat Picker** - Click Linky to change his hat (Easter egg!)
 - 🌙 **Dark Mode** - Toggle between light and dark themes
 - 🔄 **Refresh** - Reload container data
+
+---
+
+## 📊 Scoring System
+
+Each container in the dashboard is scored based on security metrics from vulnerability scans:
+
+### Severity Colors
+
+| Color | Severity | Description |
+|-------|----------|-------------|
+| 🔴 | **Critical** | Actively exploited vulnerabilities requiring immediate action |
+| 🟠 | **High** | Serious vulnerabilities that should be patched soon |
+| 🟡 | **Medium** | Moderate risk vulnerabilities to address in regular cycles |
+| 🟢 | **Low** | Minor issues with limited security impact |
+| ⚪ | **None** | No known vulnerabilities - clean image! |
+
+### Container Metrics
+
+| Metric | Range | Description |
+|--------|-------|-------------|
+| ⭐ **Rating** | 1-5 stars | Uber-style rating based on overall security posture |
+| 🌯 **Burrito Score** | 0-100 | Health score (higher = healthier, like a fresh burrito) |
+| ✅/❌ **Signed** | Yes/No | Whether the image is cryptographically signed (Sigstore) |
+| 📦 **SBOM Packages** | Count | Number of packages in the Software Bill of Materials |
+
+### How Scores Are Calculated
+
+- **5 ⭐ / 100 🌯** - Zero vulnerabilities, signed image, minimal packages
+- **4 ⭐ / 80-99 🌯** - Only low-severity vulnerabilities, signed
+- **3 ⭐ / 50-79 🌯** - Medium vulnerabilities present
+- **2 ⭐ / 20-49 🌯** - High vulnerabilities detected
+- **1 ⭐ / 0-19 🌯** - Critical vulnerabilities, unsigned, or stale scan
+
+### Sample Containers
+
+The dashboard displays mock data representing typical container registry scenarios:
+
+| Container | Status | Why |
+|-----------|--------|-----|
+| 📦node `latest` | ⚪ 5⭐ 100🌯 | Chainguard image - zero CVEs, signed |
+| 📦python `latest` | 🟢 4.8⭐ 95🌯 | Minor low-severity issues only |
+| 📦legacy-app `v1.2.3` | 🔴 1.2⭐ 15🌯 | Outdated, unsigned, critical vulns |
+| 📦mystery-box `yolo` | 🔴 0.5⭐ 3🌯 | Unknown origin, massive attack surface |
 
 ---
 
@@ -124,6 +170,7 @@ This application was built with security as a priority (30% of judging criteria!
 - ✅ **Chainguard Containers** - Using `cgr.dev/chainguard/node` for minimal attack surface
 - ✅ **Multi-stage Build** - Development dependencies not in production image
 - ✅ **Non-root User** - Container runs as unprivileged user
+- ✅ **TLS/HTTPS Support** - Self-signed certificates for encrypted transport
 - ✅ **CSP Headers** - Content Security Policy via Helmet.js
 - ✅ **CORS Restrictions** - Controlled cross-origin access
 - ✅ **Input Validation** - All API inputs validated

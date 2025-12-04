@@ -31,13 +31,16 @@ WORKDIR /app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/certs ./certs
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HTTPS_PORT=3443
+ENV ENABLE_HTTPS=true
 
-# Expose port
-EXPOSE 3000
+# Expose ports (HTTP and HTTPS)
+EXPOSE 3000 3443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

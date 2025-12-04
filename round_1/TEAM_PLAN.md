@@ -107,6 +107,7 @@ docker run -p 3000:3000 linky-security
 
 ### Additional Features (Added Dec 4)
 - [x] ➕ User can paste their own container URLs to scan
+- [ ] 🎮 **Pro Mode / Easter Egg**: Toggle to de-emojify the app for real-world usability. Replaces emoji-only UI with clean text labels while keeping the functionality. Emoji accents OK, no emoji bloat.
 - [x] 🔗 Chainguard tag with chain emoji (🔗chainguard) - not octopus
 - [x] 🔲📋📝 Multiple view modes (Grid, Compact, List)
 - [x] 🔗 Clickable labels for filtering (click tag to filter by it)

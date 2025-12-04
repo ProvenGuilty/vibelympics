@@ -2,9 +2,14 @@ import { Container, SEVERITY_EMOJI } from '../types';
 
 interface ContainerCardProps {
   container: Container;
+  onTagClick?: (tag: string) => void;
+  onDelete?: (id: string) => Promise<boolean>;
+  onClick?: (container: Container) => void;
 }
 
-export function ContainerCard({ container }: ContainerCardProps) {
+export function ContainerCard({ container, onTagClick, onDelete, onClick }: ContainerCardProps) {
+  // Check if this is a user-added container (can be deleted)
+  const isUserAdded = container.id.startsWith('user-');
   const severityClass = `severity-${container.maxSeverity}`;
   
   // Generate star rating display
@@ -19,7 +24,12 @@ export function ContainerCard({ container }: ContainerCardProps) {
   };
 
   return (
-    <div className={`card border-l-4 ${severityClass} hover:scale-105 transition-transform`}>
+    <div 
+      className={`card border-l-4 ${severityClass} hover:scale-105 transition-transform relative cursor-pointer`}
+      onClick={() => onClick?.(container)}
+      title="Click to view vulnerability details"
+    >
+            
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -99,6 +109,39 @@ export function ContainerCard({ container }: ContainerCardProps) {
         <span>📜</span>
         <span>{container.sbomPackages}</span>
         <span>📦</span>
+      </div>
+
+      {/* Labels - clickable for filtering */}
+      <div className="mt-2 flex flex-wrap gap-1">
+        {/* Chainguard tag first if applicable */}
+        {container.isChainGuard && (
+          <button
+            onClick={() => onTagClick?.('chainguard')}
+            className="text-xs px-1.5 py-0.5 rounded-full bg-chainguard-100 dark:bg-chainguard-900 text-chainguard-700 dark:text-chainguard-300 hover:bg-chainguard-200 dark:hover:bg-chainguard-800 transition-colors cursor-pointer"
+          >
+            🔗chainguard
+          </button>
+        )}
+        {/* Other labels */}
+        {container.labels && container.labels.filter(l => l !== 'chainguard').slice(0, 2).map((label, idx) => (
+          <button
+            key={idx}
+            onClick={() => onTagClick?.(label)}
+            className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+          >
+            🔗{label}
+          </button>
+        ))}
+        {/* Delete button for user-added containers - styled like a pink eraser tag */}
+        {isUserAdded && onDelete && (
+          <button
+            onClick={() => onDelete(container.id)}
+            className="text-xs px-1.5 py-0.5 rounded-full bg-pink-200 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300 hover:bg-pink-300 dark:hover:bg-pink-800 transition-colors cursor-pointer"
+            title="Erase this container"
+          >
+            ✏️erase
+          </button>
+        )}
       </div>
     </div>
   );

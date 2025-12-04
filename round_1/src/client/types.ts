@@ -1,3 +1,12 @@
+export interface Vulnerability {
+  id: string;           // CVE-2024-1234
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  package: string;      // openssl
+  version: string;      // 1.1.1k
+  fixedIn: string;      // 1.1.1l or 'No fix available'
+  description: string;  // Brief description
+}
+
 export interface Container {
   id: string;
   name: string;
@@ -11,12 +20,18 @@ export interface Container {
     medium: number;
     low: number;
   };
+  vulnerabilities: Vulnerability[];  // Actual vulnerability details
   rating: number;
   burritoScore: number;
   hat: string;
   lastScanned: string;
   sbomPackages: number;
+  isChainGuard: boolean;
+  labels: string[];
+  registry: string;
 }
+
+export type ViewMode = 'grid' | 'compact' | 'list';
 
 export interface Stats {
   total: number;

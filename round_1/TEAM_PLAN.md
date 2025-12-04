@@ -90,20 +90,39 @@ docker run -p 3000:3000 linky-security
 
 ## ✨ Features
 
-### Core Features (MVP)
-- [ ] 🐙 Linky mascot header/guide
-- [ ] 📦 Container list with emoji health indicators
-- [ ] 🔴🟠🟡🟢 Vulnerability severity display
-- [ ] ✅❌ Signature verification status (Sigstore nod)
-- [ ] 📊 Summary stats with emoji counters
+### Core Features (MVP) ✅ COMPLETE
+- [x] 🐙 Linky mascot header/guide
+- [x] 📦 Container list with emoji health indicators
+- [x] 🔴🟠🟡🟢 Vulnerability severity display
+- [x] ✅❌ Signature verification status (Sigstore nod)
+- [x] 📊 Summary stats with emoji counters
 
-### Bonus Features (Time Permitting)
-- [ ] 🎩 Hat selector for Linky (Easter egg)
-- [ ] 🌯 "Burrito Health Score" metric
-- [ ] ⭐ Uber-style 5-star ratings for containers
-- [ ] 📜 SBOM summary visualization
-- [ ] 🔍 Filter/search by severity
-- [ ] 🎨 Theme toggle (light/dark with emoji indicators)
+### Bonus Features ✅ COMPLETE
+- [x] 🎩 Hat selector for Linky (Easter egg)
+- [x] 🌯 "Burrito Health Score" metric
+- [x] ⭐ Uber-style 5-star ratings for containers
+- [x] 📜 SBOM summary visualization
+- [x] 🔍 Filter/search by severity
+- [x] 🎨 Theme toggle (light/dark with emoji indicators)
+
+### Additional Features (Added Dec 4)
+- [x] ➕ User can paste their own container URLs to scan
+- [x] 🔗 Chainguard tag with chain emoji (🔗chainguard) - not octopus
+- [x] 🔲📋📝 Multiple view modes (Grid, Compact, List)
+- [x] 🔗 Clickable labels for filtering (click tag to filter by it)
+- [x] 📍 Registry tracking for each container
+- [x] Accepts Docker Hub shorthand (`linuxserver/tautulli:latest`)
+- [x] Accepts official images (`nginx:latest`)
+- [x] Accepts FQDN (`lscr.io/linuxserver/bazarr:latest`)
+- [x] 🔁❌ Duplicate image detection with visual feedback
+- [x] Add button works in ALL view modes (grid, compact, list)
+- [x] Tag filter indicator shows active tag filter with clear button
+- [x] ✏️ Delete individual user-added containers (pink eraser tag)
+- [x] ✏️ "Erase All" button to reset dashboard to zero
+- [x] 💬 Hover tooltips on all action buttons (refresh, dark mode, filters, etc.)
+- [x] 🔍 Click any container to view detailed vulnerability modal
+- [x] 📋 Vulnerability details: CVE ID, package, version, description, fix status
+- [x] 🏗️ Registry URL detection with "coming soon" message
 
 ---
 
@@ -136,23 +155,31 @@ round_1/
 
 ### cryan (Primary)
 - [x] Initial planning and strategy
-- [ ] Project scaffolding
-- [ ] Backend (Express + security middleware)
-- [ ] Dockerfile setup
-- [ ] Health endpoints and logging
-- [ ] Documentation
+- [x] Project scaffolding
+- [x] Backend (Express + security middleware)
+- [x] Dockerfile setup (Chainguard multi-stage)
+- [x] Health endpoints and logging
+- [x] Documentation (README with scanning explanation)
 
 ### Shaun (Contributor)
-- [ ] Frontend components (React)
-- [ ] Emoji design/selection
-- [ ] Animations and polish
-- [ ] Testing
-- [ ] (Assign as available)
+- [x] Frontend components (React)
+- [x] Emoji design/selection
+- [x] Animations and polish
+- [x] Testing
 
-### Unassigned / Pair Work
-- [ ] Final integration testing
-- [ ] README polish
-- [ ] Git push and verification
+### Cascade AI (Pair Programming)
+- [x] Fixed Dockerfile CMD for Chainguard entrypoint
+- [x] Added "How Container Scanning Works" to README
+- [x] Added security weighting explanation
+- [x] Implemented user container scanning feature
+- [x] Added Chainguard badge detection
+- [x] Implemented view modes (Grid/Compact/List)
+- [x] Added labels system
+- [x] Fixed URL validation for Docker Hub shorthand
+- [x] Implemented container deletion (individual + erase all)
+- [x] Added vulnerability details modal with CVE info
+- [x] Added tooltips to all action buttons
+- [x] Styled eraser buttons as pink tags matching UI
 
 ---
 
@@ -168,17 +195,17 @@ round_1/
 
 ---
 
-## 🛡️ Security Checklist
+## 🛡️ Security Checklist ✅ COMPLETE
 
-- [ ] CSP headers configured
-- [ ] CORS restricted
-- [ ] Input validation on all endpoints
-- [ ] No hardcoded secrets
-- [ ] Non-root container user
-- [ ] Health/readiness endpoints
-- [ ] Structured logging (no sensitive data)
-- [ ] Multi-stage Docker build
-- [ ] Minimal production image
+- [x] CSP headers configured (Helmet.js)
+- [x] CORS restricted
+- [x] Input validation on all endpoints
+- [x] No hardcoded secrets
+- [x] Non-root container user (Chainguard default)
+- [x] Health/readiness endpoints (`/health`, `/ready`)
+- [x] Structured logging (Pino, no sensitive data)
+- [x] Multi-stage Docker build
+- [x] Minimal production image (Chainguard)
 
 ---
 
@@ -238,14 +265,14 @@ round_1/
 
 ---
 
-## 🚀 Deployment Checklist
+## 🚀 Deployment Checklist ✅ COMPLETE
 
-1. [ ] All code in `round_1/` folder
-2. [ ] `round_1/README.md` has build/run instructions
-3. [ ] Dockerfile builds successfully
-4. [ ] Container runs on port 3000
-5. [ ] App accessible at http://localhost:3000
-6. [ ] No text in UI (emoji only)
+1. [x] All code in `round_1/` folder
+2. [x] `round_1/README.md` has build/run instructions
+3. [x] Dockerfile builds successfully
+4. [x] Container runs on port 3000
+5. [x] App accessible at http://localhost:3000
+6. [x] No text in UI (emoji only)
 7. [ ] Repository is public
 8. [ ] All changes pushed to main branch
 
@@ -261,14 +288,16 @@ round_1/
 
 ## ⏰ Timeline
 
-| Time | Milestone |
-|------|-----------|
-| Dec 3, 4:30 PM | Planning complete, scaffolding started |
-| Dec 3, 6:00 PM | MVP backend + basic frontend |
-| Dec 3, 8:00 PM | Core features complete |
-| Dec 4, 12:00 PM | Polish and bonus features |
-| Dec 4, 6:00 PM | Final testing and documentation |
-| Dec 4, 11:00 PM | Final push (1 hour buffer) |
+| Time | Milestone | Status |
+|------|-----------|--------|
+| Dec 3, 4:30 PM | Planning complete, scaffolding started | ✅ |
+| Dec 3, 6:00 PM | MVP backend + basic frontend | ✅ |
+| Dec 3, 8:00 PM | Core features complete | ✅ |
+| Dec 4, 12:00 AM | User scanning, Chainguard badges, view modes | ✅ |
+| Dec 4, 1:30 AM | Delete containers, vulnerability modal, tooltips | ✅ |
+| Dec 4, 12:00 PM | Polish and bonus features | 🔄 |
+| Dec 4, 6:00 PM | Final testing and documentation | ⏳ |
+| Dec 4, 11:00 PM | Final push (1 hour buffer) | ⏳ |
 
 ---
 

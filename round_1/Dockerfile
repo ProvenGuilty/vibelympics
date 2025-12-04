@@ -11,8 +11,12 @@ WORKDIR /app
 # Copy package files first for better layer caching
 COPY package*.json ./
 
+# Suppress npm warnings from stale Chainguard configs
+ENV npm_config_globalignorefile=""
+ENV npm_config_python=""
+
 # Install dependencies
-RUN npm ci --only=production=false
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -50,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # The node user is already set up in the Chainguard image
 
 # Start the application
-CMD ["node", "dist/server/index.js"]
+CMD ["dist/server/index.js"]

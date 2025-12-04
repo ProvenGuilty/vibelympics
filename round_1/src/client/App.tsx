@@ -4,7 +4,9 @@ import { StatsBar } from './components/StatsBar';
 import { ContainerGrid } from './components/ContainerGrid';
 import { FilterBar } from './components/FilterBar';
 import { LinkyMascot } from './components/LinkyMascot';
-import { Container, Stats } from './types';
+import { ViewToggle } from './components/ViewToggle';
+import { VulnerabilityModal } from './components/VulnerabilityModal';
+import { Container, Stats, ViewMode } from './types';
 
 function App() {
   const [containers, setContainers] = useState<Container[]>([]);
@@ -13,6 +15,11 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [linkyHat, setLinkyHat] = useState('🎩');
   const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [selectedContainer, setSelectedContainer] = useState<Container | null>(null);
 
   useEffect(() => {
     // Apply dark mode class
@@ -48,11 +55,25 @@ function App() {
     fetchData();
   }, []);
 
-  const filteredContainers = containers.filter((container) => {
-    if (filter === 'all') return true;
-    if (filter === 'signed') return container.signed;
-    if (filter === 'unsigned') return !container.signed;
-    return container.maxSeverity === filter;
+  const filteredContainers = containers.filter((container: Container) => {
+    // Severity/signed filter
+    let passesFilter = true;
+    if (filter === 'all') passesFilter = true;
+    else if (filter === 'signed') passesFilter = container.signed;
+    else if (filter === 'unsigned') passesFilter = !container.signed;
+    else passesFilter = container.maxSeverity === filter;
+    
+    // Tag filter
+    let passesTagFilter = true;
+    if (tagFilter) {
+      if (tagFilter === 'chainguard') {
+        passesTagFilter = container.isChainGuard;
+      } else {
+        passesTagFilter = container.labels?.includes(tagFilter) || false;
+      }
+    }
+    
+    return passesFilter && passesTagFilter;
   });
 
   const handleRefresh = async () => {
@@ -74,6 +95,88 @@ function App() {
     }
   };
 
+  const handleScanContainer = async (imageUrl: string): Promise<{ error?: string; duplicate?: boolean }> => {
+    setScanning(true);
+    setScanError(null);
+    try {
+      const response = await fetch('/api/containers/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Check if it was a duplicate (returned existing container)
+        const isDuplicate = containers.some(c => c.id === data.id);
+        if (isDuplicate) {
+          setScanError('duplicate');
+          return { duplicate: true };
+        }
+        // Refresh all data after scan
+        await handleRefresh();
+        return {};
+      } else {
+        const errorText = await response.text();
+        console.error('🚨 Scan failed:', errorText);
+        setScanError('scan');
+        return { error: errorText };
+      }
+    } catch (error) {
+      console.error('🚨 Scan error:', error);
+      setScanError('scan');
+      return { error: 'Network error' };
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleTagClick = (tag: string) => {
+    // Toggle tag filter
+    if (tagFilter === tag) {
+      setTagFilter(null);
+    } else {
+      setTagFilter(tag);
+    }
+  };
+
+  const handleDeleteContainer = async (id: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/containers/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Refresh data after deletion
+        await handleRefresh();
+        return true;
+      } else {
+        const data = await response.json();
+        console.error('🚨 Delete failed:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('🚨 Delete error:', error);
+      return false;
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm('✏️ Erase ALL containers and start fresh?')) return;
+    
+    try {
+      const response = await fetch('/api/containers', {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        await handleRefresh();
+      }
+    } catch (error) {
+      console.error('🚨 Delete all error:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-chainguard-50 to-purple-100 dark:from-gray-900 dark:to-chainguard-900 transition-colors duration-300">
       <Header 
@@ -91,11 +194,36 @@ function App() {
         {/* Stats Bar */}
         {stats && <StatsBar stats={stats} />}
 
-        {/* Filter Bar */}
-        <FilterBar 
-          currentFilter={filter} 
-          onFilterChange={setFilter} 
-        />
+        {/* Filter Bar + View Toggle */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <FilterBar 
+              currentFilter={filter} 
+              onFilterChange={setFilter} 
+            />
+            {/* Tag filter indicator */}
+            {tagFilter && (
+              <button
+                onClick={() => setTagFilter(null)}
+                className="flex items-center gap-1 px-2 py-1 bg-chainguard-100 dark:bg-chainguard-900 text-chainguard-700 dark:text-chainguard-300 rounded-full text-sm hover:bg-chainguard-200 dark:hover:bg-chainguard-800 transition-colors"
+              >
+                🔗{tagFilter} ❌
+              </button>
+            )}
+            {/* Delete All button - Pink eraser style matching tags */}
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-1 px-2 py-1 bg-pink-200 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300 rounded-full text-sm hover:bg-pink-300 dark:hover:bg-pink-800 transition-colors"
+              title="Erase ALL containers and start fresh"
+            >
+              ✏️erase all
+            </button>
+          </div>
+          <ViewToggle 
+            currentView={viewMode} 
+            onViewChange={setViewMode} 
+          />
+        </div>
 
         {/* Container Grid */}
         {loading ? (
@@ -103,7 +231,16 @@ function App() {
             <span className="text-emoji-2xl animate-spin">🔄</span>
           </div>
         ) : (
-          <ContainerGrid containers={filteredContainers} />
+          <ContainerGrid 
+            containers={filteredContainers} 
+            onScanContainer={handleScanContainer}
+            isScanning={scanning}
+            viewMode={viewMode}
+            scanError={scanError}
+            onTagClick={handleTagClick}
+            onDeleteContainer={handleDeleteContainer}
+            onContainerClick={setSelectedContainer}
+          />
         )}
       </main>
 
@@ -113,6 +250,14 @@ function App() {
         <span className="mx-2">💜</span>
         <span className="opacity-70">🛡️</span>
       </footer>
+
+      {/* Vulnerability Modal */}
+      {selectedContainer && (
+        <VulnerabilityModal 
+          container={selectedContainer} 
+          onClose={() => setSelectedContainer(null)} 
+        />
+      )}
     </div>
   );
 }

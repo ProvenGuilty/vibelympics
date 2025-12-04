@@ -83,6 +83,11 @@ Linky's Security Dashboard displays container security information using **only 
 - 🎩 **Hat Picker** - Click Linky to change his hat (Easter egg!)
 - 🌙 **Dark Mode** - Toggle between light and dark themes
 - 🔄 **Refresh** - Reload container data
+- ➕ **Add Containers** - Paste any Docker image URL to scan it
+- 🔲📋📝 **View Modes** - Grid, Compact List, or Detailed List views
+- 🔗 **Clickable Tags** - Filter by clicking on container labels
+- ✏️ **Delete Containers** - Erase individual containers or reset all
+- 🔍 **Vulnerability Details** - Click any container to see CVE details
 
 ---
 
@@ -163,6 +168,108 @@ The dashboard displays mock data representing typical container registry scenari
 
 ---
 
+## 🔬 How Container Security Scanning Works
+
+This dashboard simulates what real container security tools do. Here's what happens when you scan a container image:
+
+### Step 1: Unpack the Image 📦➡️📂
+
+A container image is like a zip file with layers. The scanner downloads it and unpacks each layer to see all the files inside — the operating system, installed programs, config files, everything.
+
+### Step 2: Find All the Software 🔍
+
+The scanner looks for two types of software:
+
+- **OS Packages** — Programs installed by the operating system (like `apt install nginx`). These are tracked in files like `/var/lib/dpkg/status` on Debian or `/lib/apk/db/installed` on Alpine.
+- **App Dependencies** — Libraries your code uses. These come from files like `package-lock.json` (Node.js), `requirements.txt` (Python), or `go.sum` (Go).
+
+### Step 3: Build a Software List (SBOM) 📜
+
+The scanner creates a **Software Bill of Materials** — basically a receipt listing every piece of software in the container, including versions. This is like the ingredients list on food packaging.
+
+### Step 4: Check for Known Vulnerabilities 🔴🟠🟡🟢
+
+Now the scanner compares that list against databases of known security problems:
+
+- **CVE Database** — The main list of publicly known vulnerabilities (like CVE-2024-1234)
+- **Vendor Advisories** — Security alerts from companies like Red Hat, Ubuntu, or Chainguard
+- **OSV** — Open Source Vulnerabilities database
+
+Each vulnerability has a severity:
+| Severity | What It Means |
+|----------|---------------|
+| 🔴 Critical | Attackers can take over your system remotely |
+| 🟠 High | Serious problems that need fixing soon |
+| 🟡 Medium | Should be fixed, but less urgent |
+| 🟢 Low | Minor issues, fix when convenient |
+
+### Step 5: Verify Signatures ✅❌
+
+Good container images are **signed** — like a wax seal on a letter. The scanner checks:
+
+- Was this image signed by someone you trust?
+- Has the image been tampered with since it was signed?
+
+Tools like **Sigstore/cosign** make this easy. Unsigned images (❌) could have been modified by anyone.
+
+### Step 6: Make a Decision 🛡️
+
+Based on all this, you decide:
+- ✅ **Deploy it** — No critical issues, image is signed
+- ⚠️ **Fix first** — Has vulnerabilities that need patching
+- ❌ **Reject it** — Too risky, find a better base image
+
+---
+
+## ⚖️ What Actually Matters (Weighting)
+
+Not all security signals are equal. Here's how a real security team would prioritize:
+
+| Signal | Weight | Why |
+|--------|--------|-----|
+| 🔴 **Critical CVEs** | 🔥🔥🔥🔥🔥 | Immediate action. Attackers can exploit these right now. |
+| ✅❌ **Signature** | 🔥🔥🔥🔥 | No signature = you can't trust where it came from. Could be tampered. |
+| 🟠 **High CVEs** | 🔥🔥🔥 | Fix soon. Exploitable but may need specific conditions. |
+| 📦 **Package Count** | 🔥🔥 | More packages = more attack surface. Minimal is better. |
+| 🟡 **Medium CVEs** | 🔥🔥 | Plan to fix. Less urgent but still real risks. |
+| 🟢 **Low CVEs** | 🔥 | Fix when convenient. Minor issues. |
+| 📅 **Last Scanned** | 🔥 | Stale scans miss new vulnerabilities. Rescan regularly. |
+
+### The Fun Metrics (Easter Eggs)
+
+These are **just for vibes** — they don't represent real security calculations:
+
+| Metric | What It Is |
+|--------|------------|
+| ⭐ **Rating** (1-5) | Uber-style rating. In this demo, it loosely correlates with security health but isn't a real formula. |
+| 🌯 **Burrito Score** (0-100) | A joke metric. Higher = "healthier" container. Not a real thing. |
+| 🎩 **Hat** | Just Linky having fun. Zero security value. |
+
+### Real-World Priority Order
+
+If you're an SRE deciding what to fix first:
+
+1. **Unsigned + Critical CVEs** → 🚨 Stop everything, fix now
+2. **Signed + Critical CVEs** → 🔴 High priority, patch ASAP
+3. **Unsigned + No CVEs** → ⚠️ Why isn't this signed? Investigate.
+4. **Signed + High CVEs** → 🟠 Schedule fix this sprint
+5. **Signed + Medium/Low CVEs** → 🟡🟢 Backlog, fix when updating
+
+**Signature matters a lot** — an unsigned image with zero CVEs is still suspicious because you can't verify its origin. A signed image with a few low CVEs from a trusted source (like Chainguard) is often safer than an unsigned "clean" image from Docker Hub.
+
+---
+
+### Why Chainguard Images? 🐙
+
+Chainguard images (like `cgr.dev/chainguard/node`) are built to have:
+- **Fewer packages** = fewer things that can have vulnerabilities
+- **Daily rebuilds** = patches applied quickly
+- **Signatures** = you know exactly where they came from
+
+This dashboard shows you all of this at a glance using emojis!
+
+---
+
 ## 🛡️ Security Features
 
 This application was built with security as a priority (30% of judging criteria!):
@@ -212,6 +319,10 @@ round_1/
 │           ├── FilterBar.tsx
 │           ├── ContainerGrid.tsx
 │           ├── ContainerCard.tsx
+│           ├── ContainerRow.tsx
+│           ├── AddContainerCard.tsx
+│           ├── ViewToggle.tsx
+│           ├── VulnerabilityModal.tsx
 │           └── LinkyMascot.tsx
 └── public/                 # Static assets
 ```
@@ -226,9 +337,12 @@ round_1/
 | `/ready` | GET | Readiness probe (✅/❌) |
 | `/metrics` | GET | Basic metrics (📊) |
 | `/api/containers` | GET | List all containers |
+| `/api/containers` | DELETE | Erase all containers (reset) |
 | `/api/containers/:id` | GET | Get container by ID |
+| `/api/containers/:id` | DELETE | Delete specific container |
 | `/api/containers/filter/:severity` | GET | Filter by severity |
 | `/api/containers/stats/summary` | GET | Get summary stats |
+| `/api/containers/scan` | POST | Scan a new container image |
 
 ---
 
@@ -238,6 +352,7 @@ round_1/
 - 🌯 **Burrito Score** - Each container has a "burrito health score" (0-100)
 - ⭐ **Uber Ratings** - Containers are rated 1-5 stars
 - 🐙 **Linky Animation** - Watch Linky's tentacles wave!
+- ✏️ **Pink Eraser** - Delete buttons styled like old-school pencil erasers
 
 ---
 

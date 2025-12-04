@@ -23,6 +23,7 @@ export function Header({ darkMode, onToggleDarkMode, onRefresh }: HeaderProps) {
               onClick={onRefresh}
               className="btn text-2xl hover:animate-spin"
               aria-label="Refresh"
+              title="Refresh container data"
             >
               🔄
             </button>
@@ -32,6 +33,7 @@ export function Header({ darkMode, onToggleDarkMode, onRefresh }: HeaderProps) {
               onClick={onToggleDarkMode}
               className="btn text-2xl"
               aria-label="Toggle theme"
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {darkMode ? '☀️' : '🌙'}
             </button>
@@ -43,6 +45,7 @@ export function Header({ darkMode, onToggleDarkMode, onRefresh }: HeaderProps) {
               rel="noopener noreferrer"
               className="btn text-2xl"
               aria-label="View README"
+              title="View project documentation"
             >
               ℹ️
             </a>

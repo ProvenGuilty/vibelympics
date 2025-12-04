@@ -29,6 +29,7 @@ export interface Container {
   isChainGuard: boolean;
   labels: string[];
   registry: string;
+  locked?: boolean;  // If true, container won't be cleared by "erase all"
 }
 
 export type ViewMode = 'grid' | 'compact' | 'list';

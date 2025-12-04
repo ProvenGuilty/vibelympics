@@ -9,28 +9,46 @@ interface LinkyMascotProps {
 export function LinkyMascot({ hat, onHatChange }: LinkyMascotProps) {
   const [showHatPicker, setShowHatPicker] = useState(false);
 
+  const randomizeHat = () => {
+    const otherHats = AVAILABLE_HATS.filter(h => h !== hat);
+    const randomHat = otherHats[Math.floor(Math.random() * otherHats.length)];
+    onHatChange(randomHat);
+  };
+
   return (
     <div className="relative">
       {/* Linky with Hat */}
-      <div 
-        className="flex flex-col items-center cursor-pointer"
-        onClick={() => setShowHatPicker(!showHatPicker)}
-      >
-        {/* Hat */}
-        <div className="text-emoji-xl -mb-4 z-10 transform hover:rotate-12 transition-transform">
+      <div className="flex flex-col items-center">
+        {/* Hat - clickable to open picker */}
+        <button
+          onClick={() => setShowHatPicker(!showHatPicker)}
+          className="text-emoji-xl -mb-4 z-10 transform hover:rotate-12 transition-transform cursor-pointer"
+          title="Change my hat"
+        >
           {hat}
-        </div>
+        </button>
         
         {/* Linky */}
         <div className="text-6xl linky-animate hover:scale-110 transition-transform">
           🐙
         </div>
         
-        {/* Speech bubble hint */}
-        <div className="mt-2 text-center">
-          <span className="text-2xl">👆</span>
-          <span className="text-2xl">🎩</span>
-          <span className="text-2xl">❓</span>
+        {/* Hat controls */}
+        <div className="mt-2 text-center flex items-center gap-2">
+          <button
+            onClick={() => setShowHatPicker(!showHatPicker)}
+            className="text-2xl hover:scale-110 transition-transform cursor-pointer"
+            title="Change my hat"
+          >
+            {hat}
+          </button>
+          <button
+            onClick={randomizeHat}
+            className="text-2xl hover:scale-110 hover:rotate-12 transition-transform cursor-pointer"
+            title="Randomize my hat"
+          >
+            🎲
+          </button>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { ContainerGrid } from './components/ContainerGrid';
@@ -12,8 +12,12 @@ function App() {
   const [containers, setContainers] = useState<Container[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [filter, setFilter] = useState<string>('all');
-  const [darkMode, setDarkMode] = useState(false);
-  const [linkyHat, setLinkyHat] = useState('🎩');
+  const [darkMode, setDarkMode] = useState(true);
+  const [linkyHat, setLinkyHat] = useState(() => {
+    // Random hat on initial load
+    const hats = ['🎩', '🧢', '👒', '🎓', '🤠', '⛑️', '👑', '🎭', '🪖', '🎪', '🃏'];
+    return hats[Math.floor(Math.random() * hats.length)];
+  });
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -76,9 +80,35 @@ function App() {
     return passesFilter && passesTagFilter;
   });
 
+  // Compute stats from filtered containers so summary reflects current view
+  const filteredStats = useMemo((): Stats | null => {
+    const signed = filteredContainers.filter(c => c.signed).length;
+    const bySeverity = {
+      critical: filteredContainers.filter(c => c.maxSeverity === 'critical').length,
+      high: filteredContainers.filter(c => c.maxSeverity === 'high').length,
+      medium: filteredContainers.filter(c => c.maxSeverity === 'medium').length,
+      low: filteredContainers.filter(c => c.maxSeverity === 'low').length,
+      none: filteredContainers.filter(c => c.maxSeverity === 'none').length,
+    };
+    const avgRating = filteredContainers.length > 0
+      ? filteredContainers.reduce((sum, c) => sum + c.rating, 0) / filteredContainers.length
+      : 0;
+    
+    return {
+      total: filteredContainers.length,
+      signed,
+      unsigned: filteredContainers.length - signed,
+      bySeverity,
+      averageRating: avgRating.toFixed(1),
+    };
+  }, [filteredContainers]);
+
   const handleRefresh = async () => {
     setLoading(true);
     try {
+      // Reset to defaults first, then fetch
+      await fetch('/api/containers/reset', { method: 'POST' });
+      
       const [containersRes, statsRes] = await Promise.all([
         fetch('/api/containers'),
         fetch('/api/containers/stats/summary'),
@@ -88,6 +118,10 @@ function App() {
         setContainers(await containersRes.json());
         setStats(await statsRes.json());
       }
+      
+      // Clear any active filters
+      setFilter('all');
+      setTagFilter(null);
     } catch (error) {
       console.error('🚨 Refresh failed:', error);
     } finally {
@@ -113,8 +147,8 @@ function App() {
           setScanError('duplicate');
           return { duplicate: true };
         }
-        // Refresh all data after scan
-        await handleRefresh();
+        // Add the new container to the list (don't reset to defaults!)
+        setContainers(prev => [...prev, data]);
         return {};
       } else {
         const errorText = await response.text();
@@ -146,9 +180,10 @@ function App() {
         method: 'DELETE',
       });
       
-      if (response.ok) {
-        // Refresh data after deletion
-        await handleRefresh();
+      if (response.ok || response.status === 404) {
+        // Remove the container from local state
+        // Also remove if 404 - container may have been cleared by "Erase All" but kept in UI due to lock
+        setContainers(prev => prev.filter(c => c.id !== id));
         return true;
       } else {
         const data = await response.json();
@@ -162,19 +197,24 @@ function App() {
   };
 
   const handleDeleteAll = async () => {
-    if (!confirm('✏️ Erase ALL containers and start fresh?')) return;
-    
     try {
       const response = await fetch('/api/containers', {
         method: 'DELETE',
       });
       
       if (response.ok) {
-        await handleRefresh();
+        // Keep only locked containers
+        setContainers(prev => prev.filter(c => c.locked));
       }
     } catch (error) {
       console.error('🚨 Delete all error:', error);
     }
+  };
+
+  const handleToggleLock = (id: string) => {
+    setContainers(prev => prev.map(c => 
+      c.id === id ? { ...c, locked: !c.locked } : c
+    ));
   };
 
   return (
@@ -192,7 +232,7 @@ function App() {
         </div>
 
         {/* Stats Bar */}
-        {stats && <StatsBar stats={stats} />}
+        {filteredStats && <StatsBar stats={filteredStats} />}
 
         {/* Filter Bar + View Toggle */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -240,6 +280,7 @@ function App() {
             onTagClick={handleTagClick}
             onDeleteContainer={handleDeleteContainer}
             onContainerClick={setSelectedContainer}
+            onToggleLock={handleToggleLock}
           />
         )}
       </main>

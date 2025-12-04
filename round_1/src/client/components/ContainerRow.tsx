@@ -6,9 +6,10 @@ interface ContainerRowProps {
   onTagClick?: (tag: string) => void;
   onDelete?: (id: string) => Promise<boolean>;
   onClick?: (container: Container) => void;
+  onToggleLock?: (id: string) => void;
 }
 
-export function ContainerRow({ container, compact = false, onTagClick, onDelete, onClick }: ContainerRowProps) {
+export function ContainerRow({ container, compact = false, onTagClick, onDelete, onClick, onToggleLock }: ContainerRowProps) {
   const isUserAdded = container.id.startsWith('user-');
   const severityBorder = {
     critical: 'border-l-red-500',
@@ -28,7 +29,10 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
       >
         {/* Emoji & Name */}
         <span className="text-xl">{container.emoji}</span>
-        <span className="font-mono text-sm flex-1 truncate">{container.name}</span>
+        <div className="flex-1 truncate">
+          <span className="font-mono text-sm text-gray-700 dark:text-gray-300">{container.name}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 font-mono ml-1" title={container.registry}>({container.registry})</span>
+        </div>
         
         {/* Image Tag */}
         <span className="text-xs text-gray-500 font-mono">🏷️{container.tag}</span>
@@ -37,7 +41,7 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
         <div className="flex gap-1">
           {container.isChainGuard && (
             <button
-              onClick={() => onTagClick?.('chainguard')}
+              onClick={(e) => { e.stopPropagation(); onTagClick?.('chainguard'); }}
               className="text-xs px-1.5 py-0.5 rounded-full bg-chainguard-100 dark:bg-chainguard-900 text-chainguard-700 dark:text-chainguard-300 hover:bg-chainguard-200 dark:hover:bg-chainguard-800 transition-colors cursor-pointer"
             >
               🔗chainguard
@@ -46,7 +50,7 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
           {container.labels?.filter(l => l !== 'chainguard').slice(0, 1).map((label, idx) => (
             <button
               key={idx}
-              onClick={() => onTagClick?.(label)}
+              onClick={(e) => { e.stopPropagation(); onTagClick?.(label); }}
               className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer"
             >
               🔗{label}
@@ -65,10 +69,21 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
         {/* Signed status */}
         <span>{container.signed ? '✅' : '❌'}</span>
         
-        {/* Delete button for user-added - pink eraser tag style */}
-        {isUserAdded && onDelete && (
+        {/* Lock button */}
+        {onToggleLock && (
           <button
-            onClick={() => onDelete(container.id)}
+            onClick={(e) => { e.stopPropagation(); onToggleLock(container.id); }}
+            className={`text-sm transition-colors ${container.locked ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'}`}
+            title={container.locked ? 'Unlock container' : 'Lock container'}
+          >
+            {container.locked ? '🔒' : '🔓'}
+          </button>
+        )}
+        
+        {/* Delete button for all containers - pink eraser tag style */}
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(container.id); }}
             className="text-xs px-1.5 py-0.5 rounded-full bg-pink-200 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300 hover:bg-pink-300 dark:hover:bg-pink-800 transition-colors"
             title="Erase this container"
           >
@@ -95,8 +110,9 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
         
         {/* Middle: Name, Tag, Labels */}
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-lg">{container.name}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-lg text-gray-700 dark:text-gray-300">{container.name}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 font-mono" title={container.registry}>{container.registry}</span>
             <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">🏷️{container.tag}</span>
           </div>
           
@@ -110,7 +126,7 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
             {/* Chainguard tag first if applicable */}
             {container.isChainGuard && (
               <button
-                onClick={() => onTagClick?.('chainguard')}
+                onClick={(e) => { e.stopPropagation(); onTagClick?.('chainguard'); }}
                 className="text-xs px-1.5 py-0.5 rounded-full bg-chainguard-100 dark:bg-chainguard-900 text-chainguard-700 dark:text-chainguard-300 hover:bg-chainguard-200 dark:hover:bg-chainguard-800 transition-colors cursor-pointer"
               >
                 🔗chainguard
@@ -120,7 +136,7 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
             {container.labels?.filter(l => l !== 'chainguard').map((label, idx) => (
               <button
                 key={idx}
-                onClick={() => onTagClick?.(label)}
+                onClick={(e) => { e.stopPropagation(); onTagClick?.(label); }}
                 className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer"
               >
                 🔗{label}
@@ -156,10 +172,20 @@ export function ContainerRow({ container, compact = false, onTagClick, onDelete,
             <span>⭐{container.rating.toFixed(1)}</span>
             <span>🌯{container.burritoScore}</span>
             <span className="text-xs text-gray-500">📜{container.sbomPackages}</span>
-            {/* Delete button for user-added - pink eraser tag style */}
-            {isUserAdded && onDelete && (
+            {/* Lock button */}
+            {onToggleLock && (
               <button
-                onClick={() => onDelete(container.id)}
+                onClick={(e) => { e.stopPropagation(); onToggleLock(container.id); }}
+                className={`text-sm transition-colors ${container.locked ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'}`}
+                title={container.locked ? 'Unlock container' : 'Lock container'}
+              >
+                {container.locked ? '🔒' : '🔓'}
+              </button>
+            )}
+            {/* Delete button for all containers - pink eraser tag style */}
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(container.id); }}
                 className="text-xs px-1.5 py-0.5 rounded-full bg-pink-200 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300 hover:bg-pink-300 dark:hover:bg-pink-800 transition-colors ml-2"
                 title="Erase this container"
               >

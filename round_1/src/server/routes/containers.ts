@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { mockContainers, Container, Vulnerability, availableHats } from '../data/containers.js';
+import { mockContainers, Container, Vulnerability, availableHats, resetToDefaults } from '../data/containers.js';
 import { createLogger } from '../logger.js';
 
 const logger = createLogger('containers-api');
@@ -38,11 +38,29 @@ const sampleVulns = {
   ],
 };
 
-// Helper to generate mock vulnerabilities based on counts
-function generateVulnerabilities(vulnCount: { critical: number; high: number; medium: number; low: number }): Vulnerability[] {
+// Simple hash function to generate consistent pseudo-random numbers from a string
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+// Seeded random number generator for consistent results
+function seededRandom(seed: number, index: number = 0): number {
+  const x = Math.sin(seed + index) * 10000;
+  return x - Math.floor(x);
+}
+
+// Helper to generate mock vulnerabilities based on counts (deterministic based on seed)
+function generateVulnerabilities(vulnCount: { critical: number; high: number; medium: number; low: number }, seed: number): Vulnerability[] {
   const vulns: Vulnerability[] = [];
   const year = 2024;
-  let cveNum = 1000 + Math.floor(Math.random() * 9000);
+  let cveNum = 1000 + Math.floor(seededRandom(seed, 100) * 9000);
+  let seedIndex = 101;
   
   const addVulns = (severity: 'critical' | 'high' | 'medium' | 'low', count: number) => {
     const samples = sampleVulns[severity];
@@ -52,8 +70,8 @@ function generateVulnerabilities(vulnCount: { critical: number; high: number; me
         id: `CVE-${year}-${cveNum++}`,
         severity,
         package: sample.pkg,
-        version: `${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}`,
-        fixedIn: Math.random() > 0.3 ? `${Math.floor(Math.random() * 3) + 2}.${Math.floor(Math.random() * 10)}.0` : 'No fix available',
+        version: `${Math.floor(seededRandom(seed, seedIndex++) * 3) + 1}.${Math.floor(seededRandom(seed, seedIndex++) * 10)}.${Math.floor(seededRandom(seed, seedIndex++) * 20)}`,
+        fixedIn: seededRandom(seed, seedIndex++) > 0.3 ? `${Math.floor(seededRandom(seed, seedIndex++) * 3) + 2}.${Math.floor(seededRandom(seed, seedIndex++) * 10)}.0` : 'No fix available',
         description: sample.desc,
       });
     }
@@ -154,7 +172,7 @@ router.post('/scan', async (req: Request, res: Response) => {
   const dockerHubPattern = /^[a-z0-9_-]+\/[a-z0-9._-]+(:[a-z0-9._-]+)?$/i;
   const officialPattern = /^[a-z0-9._-]+(:[a-z0-9._-]+)?$/i; // Official images like "nginx:latest"
   
-  const trimmedUrl = imageUrl.trim();
+  const trimmedUrl = imageUrl.trim().toLowerCase(); // Normalize to lowercase for consistent hashing
   if (!fqdnPattern.test(trimmedUrl) && !dockerHubPattern.test(trimmedUrl) && !officialPattern.test(trimmedUrl)) {
     logger.warn({ imageUrl }, 'Invalid image URL format');
     return res.status(400).json({ error: '❌📦🔗' });
@@ -188,15 +206,18 @@ router.post('/scan', async (req: Request, res: Response) => {
   // Parse image URL
   const tag = trimmedUrl.includes(':') ? trimmedUrl.split(':').pop() || 'latest' : 'latest';
   
-  // Generate mock scan results (weighted toward realistic outcomes)
-  const rand = Math.random();
+  // Generate DETERMINISTIC scan results based on image name hash
+  // This ensures the same image always gets the same vulnerability profile
+  const seed = hashString(normalizedUrl);
+  const rand = seededRandom(seed, 0);
+  
   let maxSeverity: 'critical' | 'high' | 'medium' | 'low' | 'none';
   let vulnCount: { critical: number; high: number; medium: number; low: number };
   let signed: boolean;
   let rating: number;
   let burritoScore: number;
   
-  // Chainguard images are clean, others vary
+  // Chainguard images are clean, others vary based on deterministic hash
   const isChainguard = registry.includes('cgr.dev') || registry.includes('chainguard');
   
   if (isChainguard) {
@@ -208,46 +229,46 @@ router.post('/scan', async (req: Request, res: Response) => {
   } else if (rand < 0.2) {
     // 20% chance: clean image
     maxSeverity = 'none';
-    vulnCount = { critical: 0, high: 0, medium: 0, low: Math.floor(Math.random() * 3) };
-    signed = Math.random() > 0.3;
-    rating = 4.5 + Math.random() * 0.5;
-    burritoScore = 90 + Math.floor(Math.random() * 10);
+    vulnCount = { critical: 0, high: 0, medium: 0, low: Math.floor(seededRandom(seed, 1) * 3) };
+    signed = seededRandom(seed, 2) > 0.3;
+    rating = 4.5 + seededRandom(seed, 3) * 0.5;
+    burritoScore = 90 + Math.floor(seededRandom(seed, 4) * 10);
   } else if (rand < 0.5) {
     // 30% chance: low/medium vulns
-    maxSeverity = Math.random() > 0.5 ? 'medium' : 'low';
+    maxSeverity = seededRandom(seed, 5) > 0.5 ? 'medium' : 'low';
     vulnCount = {
       critical: 0,
       high: 0,
-      medium: Math.floor(Math.random() * 8),
-      low: Math.floor(Math.random() * 15),
+      medium: Math.floor(seededRandom(seed, 6) * 8),
+      low: Math.floor(seededRandom(seed, 7) * 15),
     };
-    signed = Math.random() > 0.4;
-    rating = 3 + Math.random() * 1.5;
-    burritoScore = 60 + Math.floor(Math.random() * 25);
+    signed = seededRandom(seed, 8) > 0.4;
+    rating = 3 + seededRandom(seed, 9) * 1.5;
+    burritoScore = 60 + Math.floor(seededRandom(seed, 10) * 25);
   } else if (rand < 0.8) {
     // 30% chance: high vulns
     maxSeverity = 'high';
     vulnCount = {
       critical: 0,
-      high: Math.floor(Math.random() * 10) + 1,
-      medium: Math.floor(Math.random() * 20),
-      low: Math.floor(Math.random() * 30),
+      high: Math.floor(seededRandom(seed, 11) * 10) + 1,
+      medium: Math.floor(seededRandom(seed, 12) * 20),
+      low: Math.floor(seededRandom(seed, 13) * 30),
     };
-    signed = Math.random() > 0.6;
-    rating = 2 + Math.random() * 1;
-    burritoScore = 30 + Math.floor(Math.random() * 30);
+    signed = seededRandom(seed, 14) > 0.6;
+    rating = 2 + seededRandom(seed, 15) * 1;
+    burritoScore = 30 + Math.floor(seededRandom(seed, 16) * 30);
   } else {
     // 20% chance: critical vulns
     maxSeverity = 'critical';
     vulnCount = {
-      critical: Math.floor(Math.random() * 5) + 1,
-      high: Math.floor(Math.random() * 15),
-      medium: Math.floor(Math.random() * 30),
-      low: Math.floor(Math.random() * 50),
+      critical: Math.floor(seededRandom(seed, 17) * 5) + 1,
+      high: Math.floor(seededRandom(seed, 18) * 15),
+      medium: Math.floor(seededRandom(seed, 19) * 30),
+      low: Math.floor(seededRandom(seed, 20) * 50),
     };
-    signed = Math.random() > 0.8;
-    rating = 0.5 + Math.random() * 1.5;
-    burritoScore = 5 + Math.floor(Math.random() * 25);
+    signed = seededRandom(seed, 21) > 0.8;
+    rating = 0.5 + seededRandom(seed, 22) * 1.5;
+    burritoScore = 5 + Math.floor(seededRandom(seed, 23) * 25);
   }
   
   // Adjust maxSeverity based on actual counts
@@ -272,19 +293,19 @@ router.post('/scan', async (req: Request, res: Response) => {
   const defaultLabels = isChainguard ? ['chainguard'] : ['user-added'];
   
   const newContainer: Container = {
-    id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `user-${Date.now()}-${Math.floor(seededRandom(seed, 24) * 1000000).toString(36)}`,
     name: `📦${imageName}`,
     emoji,
     tag,
     signed,
     maxSeverity,
     vulnCount,
-    vulnerabilities: generateVulnerabilities(vulnCount),
+    vulnerabilities: generateVulnerabilities(vulnCount, seed),
     rating: Math.round(rating * 10) / 10,
     burritoScore,
-    hat: availableHats[Math.floor(Math.random() * availableHats.length)],
+    hat: availableHats[Math.floor(seededRandom(seed, 25) * availableHats.length)],
     lastScanned: new Date().toISOString(),
-    sbomPackages: 20 + Math.floor(Math.random() * 200),
+    sbomPackages: 20 + Math.floor(seededRandom(seed, 26) * 200),
     isChainGuard: isChainguard,
     labels: userLabels.length > 0 ? userLabels : defaultLabels,
     registry,
@@ -313,11 +334,12 @@ router.delete('/:id', (req: Request, res: Response) => {
     return res.status(400).json({ error: '❌🔤' });
   }
   
-  // Check if it's a mock container (can't delete those)
-  const mockContainer = mockContainers.find((c: Container) => c.id === id);
-  if (mockContainer) {
-    logger.warn({ id }, 'Cannot delete mock container');
-    return res.status(403).json({ error: '🔒📦' }); // Locked container
+  // Check if it's a mock container - remove from mockContainers
+  const mockIndex = mockContainers.findIndex((c: Container) => c.id === id);
+  if (mockIndex !== -1) {
+    const deleted = mockContainers.splice(mockIndex, 1)[0];
+    logger.info({ id, name: deleted.name }, '🗑️ Mock container deleted');
+    return res.json({ deleted: true, id, emoji: '🗑️' });
   }
   
   // Find and remove from user containers
@@ -344,6 +366,17 @@ router.delete('/', (_req: Request, res: Response) => {
   logger.info({ userCount, mockCount }, '✏️ All containers erased - starting fresh!');
   
   res.json({ deleted: true, userCount, mockCount, total: userCount + mockCount, emoji: '✏️' });
+});
+
+// Reset to default containers (restore initial state)
+router.post('/reset', (_req: Request, res: Response) => {
+  userContainers.length = 0; // Clear user containers
+  resetToDefaults(); // Restore mock containers to defaults
+  
+  const count = mockContainers.length;
+  logger.info({ count }, '🔄 Containers reset to defaults');
+  
+  res.json({ reset: true, count, emoji: '🔄' });
 });
 
 export { router as containersRouter };

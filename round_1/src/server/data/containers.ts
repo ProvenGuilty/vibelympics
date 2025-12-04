@@ -92,8 +92,8 @@ function generateVulnerabilities(vulnCount: { critical: number; high: number; me
   return vulns;
 }
 
-// Mock container data with Chainguard-themed names
-export const mockContainers: Container[] = [
+// Default container data (immutable template)
+const defaultContainers: Container[] = [
   {
     id: 'cg-node-001',
     name: '📦node',
@@ -275,6 +275,15 @@ export const mockContainers: Container[] = [
     registry: 'docker.io',
   },
 ];
+
+// Mutable array that can be reset - starts with defaults
+export const mockContainers: Container[] = [...defaultContainers];
+
+// Function to reset mockContainers to defaults
+export function resetToDefaults(): void {
+  mockContainers.length = 0;
+  mockContainers.push(...defaultContainers);
+}
 
 // Linky's available hats
 export const availableHats = ['🎩', '🧢', '👒', '🎓', '🤠', '⛑️', '👑', '🎭', '🪖', '🎪', '🃏'];

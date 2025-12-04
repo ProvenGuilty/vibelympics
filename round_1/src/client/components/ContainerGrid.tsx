@@ -12,14 +12,15 @@ interface ContainerGridProps {
   onTagClick?: (tag: string) => void;
   onDeleteContainer?: (id: string) => Promise<boolean>;
   onContainerClick?: (container: Container) => void;
+  onToggleLock?: (id: string) => void;
 }
 
-export function ContainerGrid({ containers, onScanContainer, isScanning, viewMode, scanError, onTagClick, onDeleteContainer, onContainerClick }: ContainerGridProps) {
+export function ContainerGrid({ containers, onScanContainer, isScanning, viewMode, scanError, onTagClick, onDeleteContainer, onContainerClick, onToggleLock }: ContainerGridProps) {
   if (viewMode === 'grid') {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {containers.map((container) => (
-          <ContainerCard key={container.id} container={container} onTagClick={onTagClick} onDelete={onDeleteContainer} onClick={onContainerClick} />
+          <ContainerCard key={container.id} container={container} onTagClick={onTagClick} onDelete={onDeleteContainer} onClick={onContainerClick} onToggleLock={onToggleLock} />
         ))}
         {/* Add Container Card - always at the end */}
         <AddContainerCard onScan={onScanContainer} isScanning={isScanning} scanError={scanError} />
@@ -31,7 +32,7 @@ export function ContainerGrid({ containers, onScanContainer, isScanning, viewMod
     return (
       <div className="space-y-1">
         {containers.map((container) => (
-          <ContainerRow key={container.id} container={container} compact onTagClick={onTagClick} onDelete={onDeleteContainer} onClick={onContainerClick} />
+          <ContainerRow key={container.id} container={container} compact onTagClick={onTagClick} onDelete={onDeleteContainer} onClick={onContainerClick} onToggleLock={onToggleLock} />
         ))}
         {/* Add Container - compact inline version */}
         <AddContainerCard onScan={onScanContainer} isScanning={isScanning} scanError={scanError} compact />
@@ -43,7 +44,7 @@ export function ContainerGrid({ containers, onScanContainer, isScanning, viewMod
   return (
     <div className="space-y-2">
       {containers.map((container) => (
-        <ContainerRow key={container.id} container={container} onTagClick={onTagClick} onDelete={onDeleteContainer} onClick={onContainerClick} />
+        <ContainerRow key={container.id} container={container} onTagClick={onTagClick} onDelete={onDeleteContainer} onClick={onContainerClick} onToggleLock={onToggleLock} />
       ))}
       {/* Add Container - list inline version */}
       <AddContainerCard onScan={onScanContainer} isScanning={isScanning} scanError={scanError} compact />

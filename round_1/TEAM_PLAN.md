@@ -24,9 +24,9 @@ cd vibelympics/round_1
 
 # 4. Build and run
 docker build -t linky-security .
-docker run -p 3000:3000 linky-security
+docker run -p 3000:3000 -p 3443:3443 linky-security
 
-# 5. Open http://localhost:3000
+# 5. Open https://localhost:3443
 ```
 
 ---

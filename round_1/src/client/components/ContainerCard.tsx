@@ -5,9 +5,10 @@ interface ContainerCardProps {
   onTagClick?: (tag: string) => void;
   onDelete?: (id: string) => Promise<boolean>;
   onClick?: (container: Container) => void;
+  onToggleLock?: (id: string) => void;
 }
 
-export function ContainerCard({ container, onTagClick, onDelete, onClick }: ContainerCardProps) {
+export function ContainerCard({ container, onTagClick, onDelete, onClick, onToggleLock }: ContainerCardProps) {
   // Check if this is a user-added container (can be deleted)
   const isUserAdded = container.id.startsWith('user-');
   const severityClass = `severity-${container.maxSeverity}`;
@@ -27,7 +28,6 @@ export function ContainerCard({ container, onTagClick, onDelete, onClick }: Cont
     <div 
       className={`card border-l-4 ${severityClass} hover:scale-105 transition-transform relative cursor-pointer`}
       onClick={() => onClick?.(container)}
-      title="Click to view vulnerability details"
     >
             
       {/* Header */}
@@ -38,9 +38,9 @@ export function ContainerCard({ container, onTagClick, onDelete, onClick }: Cont
         </div>
         <div className="flex items-center gap-1">
           {container.signed ? (
-            <span className="text-emoji" title="Signed">✅</span>
+            <span className="text-emoji">✅</span>
           ) : (
-            <span className="text-emoji" title="Unsigned">❌</span>
+            <span className="text-emoji">❌</span>
           )}
           <span className="text-emoji">{SEVERITY_EMOJI[container.maxSeverity]}</span>
         </div>
@@ -51,7 +51,10 @@ export function ContainerCard({ container, onTagClick, onDelete, onClick }: Cont
         <div className="text-lg font-mono text-gray-700 dark:text-gray-300">
           {container.name}
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+        <div className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate" title={container.registry}>
+          {container.registry}
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
           <span>🏷️</span>
           <span className="font-mono">{container.tag}</span>
         </div>
@@ -116,7 +119,7 @@ export function ContainerCard({ container, onTagClick, onDelete, onClick }: Cont
         {/* Chainguard tag first if applicable */}
         {container.isChainGuard && (
           <button
-            onClick={() => onTagClick?.('chainguard')}
+            onClick={(e) => { e.stopPropagation(); onTagClick?.('chainguard'); }}
             className="text-xs px-1.5 py-0.5 rounded-full bg-chainguard-100 dark:bg-chainguard-900 text-chainguard-700 dark:text-chainguard-300 hover:bg-chainguard-200 dark:hover:bg-chainguard-800 transition-colors cursor-pointer"
           >
             🔗chainguard
@@ -126,16 +129,30 @@ export function ContainerCard({ container, onTagClick, onDelete, onClick }: Cont
         {container.labels && container.labels.filter(l => l !== 'chainguard').slice(0, 2).map((label, idx) => (
           <button
             key={idx}
-            onClick={() => onTagClick?.(label)}
+            onClick={(e) => { e.stopPropagation(); onTagClick?.(label); }}
             className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer"
           >
             🔗{label}
           </button>
         ))}
-        {/* Delete button for user-added containers - styled like a pink eraser tag */}
-        {isUserAdded && onDelete && (
+        {/* Lock button - prevents container from being cleared */}
+        {onToggleLock && (
           <button
-            onClick={() => onDelete(container.id)}
+            onClick={(e) => { e.stopPropagation(); onToggleLock(container.id); }}
+            className={`text-xs px-1.5 py-0.5 rounded-full transition-colors cursor-pointer ${
+              container.locked 
+                ? 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-300 dark:hover:bg-yellow-800' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+            title={container.locked ? 'Unlock container (will be cleared with Erase All)' : 'Lock container (protected from Erase All)'}
+          >
+            {container.locked ? '🔒' : '🔓'}
+          </button>
+        )}
+        {/* Delete button for all containers - styled like a pink eraser tag */}
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(container.id); }}
             className="text-xs px-1.5 py-0.5 rounded-full bg-pink-200 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300 hover:bg-pink-300 dark:hover:bg-pink-800 transition-colors cursor-pointer"
             title="Erase this container"
           >

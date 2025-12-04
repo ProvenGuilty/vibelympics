@@ -107,7 +107,7 @@ export function AddContainerCard({ onScan, isScanning, scanError, compact = fals
   const getErrorEmoji = () => {
     switch (errorType) {
       case 'duplicate': return '🔁❌'; // Already exists
-      case 'format': return '❌📋'; // Bad format
+      case 'format': return '🚫⌨️'; // No typing allowed - paste only
       case 'scan': return '💥❌'; // Scan failed
       case 'registry': return '🏗️🚧'; // Registry browsing not yet implemented
       default: return '❌';
@@ -222,7 +222,7 @@ export function AddContainerCard({ onScan, isScanning, scanError, compact = fals
             className={`w-full px-3 py-2 bg-white dark:bg-gray-900 border-2 rounded-lg text-sm font-mono
               focus:outline-none focus:ring-2 focus:ring-chainguard-500
               ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-            placeholder="📦 lscr.io/linuxserver/bazarr:latest"
+            placeholder="📦 pytorch/pytorch:latest"
             onPaste={handlePaste}
             onBlur={handleBlur}
             onKeyDown={(e) => {
@@ -232,7 +232,7 @@ export function AddContainerCard({ onScan, isScanning, scanError, compact = fals
                   e.preventDefault();
                   setError(true);
                   setErrorType('format');
-                  setTimeout(() => { setError(false); setErrorType(null); }, 500);
+                  setTimeout(() => { setError(false); setErrorType(null); }, 1500);
                 }
               }
             }}
@@ -240,14 +240,22 @@ export function AddContainerCard({ onScan, isScanning, scanError, compact = fals
           />
           
           {/* Error hint */}
-          {error && (
+          {error && errorType === 'format' && (
+            <div className="text-center mt-2">
+              <div className="text-2xl">🚫⌨️</div>
+              <div className="text-xs text-red-500 mt-1">📋 → 📦 (paste only!)</div>
+            </div>
+          )}
+          {error && errorType !== 'format' && (
             <div className="text-center mt-2 text-xl">{getErrorEmoji()}</div>
           )}
           
           {/* Format hint */}
-          <div className="text-center mt-2 text-xs text-gray-400">
-            🏷️ registry.io/image:tag
-          </div>
+          {!error && (
+            <div className="text-center mt-2 text-xs text-gray-400">
+              🏷️ registry.io/image:tag
+            </div>
+          )}
         </div>
       )}
     </div>

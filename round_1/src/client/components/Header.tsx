@@ -36,10 +36,16 @@ export function Header({ darkMode, onToggleDarkMode, onRefresh }: HeaderProps) {
               {darkMode ? '☀️' : '🌙'}
             </button>
 
-            {/* Info */}
-            <button className="btn text-2xl" aria-label="Information">
+            {/* Info - links to README */}
+            <a
+              href="https://github.com/ProvenGuilty/vibelympics/blob/main/round_1/README.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn text-2xl"
+              aria-label="View README"
+            >
               ℹ️
-            </button>
+            </a>
           </nav>
         </div>
       </div>

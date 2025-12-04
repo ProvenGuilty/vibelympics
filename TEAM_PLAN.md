@@ -2,7 +2,7 @@
 
 > **Project**: Linky's Container Security Dashboard  
 > **Deadline**: December 4, 2025 @ 11:59 PM EST  
-> **Team**: ProvenGuilty (cryan, Shaun)
+> **Team**: [@ProvenGuilty](https://github.com/ProvenGuilty), [@mrshaun13](https://github.com/mrshaun13)
 
 ---
 

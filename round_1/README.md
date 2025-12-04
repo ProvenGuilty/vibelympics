@@ -197,8 +197,8 @@ round_1/
 ## 👥 Team
 
 **Team ProvenGuilty**
-- cryan
-- Shaun
+- [@ProvenGuilty](https://github.com/ProvenGuilty)
+- [@mrshaun13](https://github.com/mrshaun13)
 
 ---
 

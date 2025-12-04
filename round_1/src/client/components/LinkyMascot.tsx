@@ -22,7 +22,7 @@ export function LinkyMascot({ hat, onHatChange }: LinkyMascotProps) {
         </div>
         
         {/* Linky */}
-        <div className="text-6xl linky-animate">
+        <div className="text-6xl linky-animate hover:scale-110 transition-transform">
           🐙
         </div>
         
@@ -36,19 +36,23 @@ export function LinkyMascot({ hat, onHatChange }: LinkyMascotProps) {
 
       {/* Hat Picker */}
       {showHatPicker && (
-        <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="absolute top-full mt-4 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50 border-2 border-chainguard-300 dark:border-chainguard-600">
+          <div className="flex flex-wrap justify-center gap-3 max-w-[280px]">
             {AVAILABLE_HATS.map((hatOption) => (
               <button
                 key={hatOption}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   onHatChange(hatOption);
                   setShowHatPicker(false);
                 }}
                 className={`
-                  text-3xl p-2 rounded-lg transition-all hover:scale-125
-                  ${hat === hatOption ? 'bg-chainguard-200 dark:bg-chainguard-700' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
+                  w-12 h-12 flex items-center justify-center text-2xl rounded-lg transition-all hover:scale-110 border-2
+                  ${hat === hatOption 
+                    ? 'bg-chainguard-200 dark:bg-chainguard-700 border-chainguard-500' 
+                    : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-300'}
                 `}
+                title={hatOption}
               >
                 {hatOption}
               </button>

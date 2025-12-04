@@ -44,7 +44,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "author": "Team ProvenGuilty",
+  "author": "Team ProvenGuilty (@ProvenGuilty, @mrshaun13)",
   "license": "MIT",
   "keywords": [
     "vibelympics",

@@ -190,9 +190,10 @@ router.post('/scan', async (req: Request, res: Response) => {
     normalizedUrl = `docker.io/library/${trimmedUrl}`;
   }
   
-  // Check if already scanned
+  // Check if already scanned (in both user and mock containers)
   const imageName = trimmedUrl.split('/').pop()?.split(':')[0] || trimmedUrl.split(':')[0];
-  const existing = userContainers.find(c => c.name === `📦${imageName}`);
+  const allContainers = getAllContainers();
+  const existing = allContainers.find(c => c.name === `📦${imageName}`);
   if (existing) {
     logger.info({ imageUrl }, 'Container already scanned');
     return res.json(existing);

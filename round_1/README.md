@@ -170,6 +170,8 @@ The dashboard displays mock data representing typical container registry scenari
 
 ## 🔬 How Container Security Scanning Works
 
+> ⚠️ **Demo Notice**: This dashboard uses **simulated/mock scanning**. The CVEs, vulnerability counts, and security scores shown are **not real** — they are deterministically generated from the image name for demonstration purposes. No actual container images are pulled or scanned. For real vulnerability scanning, use tools like [Trivy](https://trivy.dev), [Grype](https://github.com/anchore/grype), or [Snyk](https://snyk.io).
+
 This dashboard simulates what real container security tools do. Here's what happens when you scan a container image:
 
 ### Step 1: Unpack the Image 📦➡️📂

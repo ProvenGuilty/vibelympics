@@ -6,6 +6,8 @@
 🐙🛡️📦 - Secure containers, happy Linky!
 ```
 
+![Linky's Dashboard Vibes](./assets/linky-dashboard-vibes.png)
+
 ---
 
 ## 🚀 Quick Start

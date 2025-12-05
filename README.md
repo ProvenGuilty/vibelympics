@@ -19,6 +19,34 @@ After registering, take next steps:
 2. When the competition starts on December 1st, review the folder for the first round of Vibelympics for information on the challenge. You'll also receive an email from us.
 3. Start vibing!
 
+---
+
+## 👥 Team ProvenGuilty
+
+- [@ProvenGuilty](https://github.com/ProvenGuilty)
+- [@mrshaun13](https://github.com/mrshaun13)
+
+---
+
+## 🏆 Competition Entries
+
+### Round 1: Linky's Container Security Dashboard 🐙🛡️📦
+
+> An emoji-only web dashboard where Linky the octopus helps you visualize container security status.
+
+**📁 Project:** [`round_1/`](./round_1/)
+
+**🎯 Features:**
+- 📊 Dashboard showing container security stats with emoji-only UI
+- 🔍 Filter containers by vulnerability severity (🔴🟠🟡🟢⚪)
+- ⭐ Uber-style ratings (1-5 stars) and 🌯 Burrito Health Scores
+- ✅❌ Signature verification status (Sigstore)
+- 🎩 Hat picker Easter egg - click Linky to change his hat!
+- 🌙 Dark mode toggle or bust
+- ➕ Add containers by pasting Docker image URLs
+
+**📖 Full Details:** See [round_1/README.md](./round_1/README.md)
+
 ## Schedule
 
 <table role="table" aria-label="Vibelympics Competition Schedule">

@@ -1,0 +1,29 @@
+{
+  "urllib3": {
+    "2.0.0": {
+      "breakingChanges": [
+        {
+          "type": "removed",
+          "description": "Removed urllib3.contrib.pyopenssl module"
+        },
+        {
+          "type": "moved",
+          "description": "Retry class moved from urllib3.util.retry to urllib3.util"
+        },
+        {
+          "type": "changed",
+          "description": "HTTPConnectionPool requires block parameter"
+        }
+      ],
+      "migrationGuide": "https://urllib3.readthedocs.io/en/stable/v2-migration-guide.html",
+      "changelog": "https://github.com/urllib3/urllib3/blob/main/CHANGES.rst"
+    }
+  },
+  "requests": {
+    "2.29.0": {
+      "breakingChanges": [],
+      "migrationGuide": null,
+      "changelog": "https://github.com/psf/requests/blob/main/HISTORY.md"
+    }
+  }
+}

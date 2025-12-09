@@ -7,6 +7,8 @@
    Your dependencies have dependencies. We find the weak ones.
 ```
 
+![The Weakest Lynx Screenshot](./assets/the-weakest-lynx.png)
+
 ---
 
 ## 🚀 Quick Start

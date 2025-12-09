@@ -61,73 +61,8 @@ export async function queryOsv(pkg: string, ecosystem: string, version: string):
   }
 }
 
-function isVersionAffected(vuln: OsvVulnerability, version: string): boolean {
-  // If no affected info, assume it might be relevant (conservative approach)
-  if (!vuln.affected || vuln.affected.length === 0) {
-    return true;
-  }
-  
-  for (const affected of vuln.affected) {
-    // Check if version is explicitly listed
-    if (affected.versions && affected.versions.includes(version)) {
-      return true;
-    }
-    
-    // Check ranges
-    for (const range of affected.ranges) {
-      if (range.type === 'ECOSYSTEM' || range.type === 'SEMVER') {
-        let isAffected = false;
-        let hasIntroduced = false;
-        
-        for (const event of range.events) {
-          if (event.introduced !== undefined) {
-            hasIntroduced = true;
-            const introduced = event.introduced;
-            
-            // "0" means all versions from the start
-            if (introduced === '0' || compareVersions(version, introduced) >= 0) {
-              isAffected = true;
-            }
-          }
-          
-          if (event.fixed !== undefined && isAffected) {
-            const fixed = event.fixed;
-            // If our version is >= fixed version, it's not affected
-            if (compareVersions(version, fixed) >= 0) {
-              isAffected = false;
-            }
-          }
-        }
-        
-        // If no introduced event was found, be conservative and include it
-        if (!hasIntroduced) {
-          return true;
-        }
-        
-        if (isAffected) {
-          return true;
-        }
-      }
-    }
-  }
-  
-  return false;
-}
-
-function compareVersions(v1: string, v2: string): number {
-  const parts1 = v1.split('.').map(p => parseInt(p) || 0);
-  const parts2 = v2.split('.').map(p => parseInt(p) || 0);
-  
-  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-    const p1 = parts1[i] || 0;
-    const p2 = parts2[i] || 0;
-    
-    if (p1 < p2) return -1;
-    if (p1 > p2) return 1;
-  }
-  
-  return 0;
-}
+// Note: isVersionAffected and compareVersions were removed as dead code.
+// OSV API handles version filtering when version is included in the query.
 
 function convertOsvToVulnerability(osv: OsvVulnerability, pkg: string, installedVersion: string): Vulnerability {
   // Determine severity from CVSS score or default to medium

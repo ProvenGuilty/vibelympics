@@ -19,11 +19,13 @@ git clone https://github.com/ProvenGuilty/vibelympics.git
 cd vibelympics/round_2
 docker build -t weakest-lynx .
 
-# Run the web UI
-docker run -p 8080:8080 weakest-lynx
+# Run the web UI (HTTPS with HTTP redirect)
+docker run -p 8080:8080 -p 8443:8443 weakest-lynx
 
-# Open http://localhost:8080
+# Open https://localhost:8443 (HTTP on 8080 redirects to HTTPS)
 ```
+
+> **Note**: The container uses a self-signed certificate. Your browser will show a security warning - this is expected for local development. Click "Advanced" → "Proceed" to continue.
 
 ### Option 2: Local Development
 
@@ -208,6 +210,11 @@ round_2/
 - **Version Filtering** — Only shows vulnerabilities affecting your specific version
 - **No Secrets in Code** — All API keys via environment variables
 - **Chainguard Base** — Minimal attack surface container image
+- **HTTPS by Default** — TLS encryption with automatic HTTP→HTTPS redirect
+- **Production Clean** — Zero vulnerabilities in production builds and runtime
+- **CORS Restricted** — API access restricted to allowed origins in production
+
+> **Note on `npm audit`**: The dev dependency `esbuild` (via Vite) reports a moderate vulnerability ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)) that **only affects the local development server** (`npm run dev`). This does not affect production builds, the Docker container, or end users. The fix requires Vite 7.x which is incompatible with Chainguard's non-root containers.
 
 ---
 
@@ -215,8 +222,11 @@ round_2/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PORT` | Server port | `8080` |
+| `PORT` | HTTP server port | `8080` |
+| `HTTPS_PORT` | HTTPS server port | `8443` |
+| `ENABLE_HTTPS` | Enable HTTPS with HTTP redirect | `true` in production |
 | `LOG_LEVEL` | Log verbosity | `info` |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins | localhost ports |
 
 ---
 

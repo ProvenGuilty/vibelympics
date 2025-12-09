@@ -34,7 +34,7 @@ export interface ScanRequest {
 
 export interface ScanResponse {
   id: string;
-  status: 'pending' | 'scanning' | 'complete' | 'error';
+  status: 'pending' | 'scanning' | 'completed' | 'error';
   ecosystem: string;
   target: string;
   version: string;

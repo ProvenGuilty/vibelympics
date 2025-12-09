@@ -16,16 +16,7 @@ router.get('/api/config', (req, res) => {
   res.json(safeConfig);
 });
 
-router.put('/api/config', (req, res) => {
-  try {
-    const updates = req.body;
-    updateConfig(updates);
-    logger.info({ updates }, 'Configuration updated');
-    res.json({ success: true });
-  } catch (error) {
-    logger.error({ error }, 'Failed to update configuration');
-    res.status(500).json({ error: 'Failed to update configuration' });
-  }
-});
+// PUT /api/config removed - unauthenticated config modification is a security risk
+// To re-enable, add authentication middleware and input validation
 
 export default router;

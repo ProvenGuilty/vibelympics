@@ -5,8 +5,29 @@ import { logger } from '../logger.js';
 
 const router = Router();
 
-// In-memory scan storage (stateless per-request, but keep recent for demo)
+// In-memory scan storage with TTL cleanup
 const scans = new Map<string, any>();
+const SCAN_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const MAX_SCANS = 1000;
+
+// Cleanup old scans periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, scan] of scans.entries()) {
+    if (scan.createdAt && now - scan.createdAt > SCAN_TTL_MS) {
+      scans.delete(id);
+    }
+  }
+  // Also enforce max size
+  if (scans.size > MAX_SCANS) {
+    const entries = Array.from(scans.entries())
+      .sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
+    const toDelete = entries.slice(0, scans.size - MAX_SCANS);
+    for (const [id] of toDelete) {
+      scans.delete(id);
+    }
+  }
+}, 60 * 1000); // Run every minute
 
 router.post('/api/scan', async (req, res) => {
   try {
@@ -26,11 +47,12 @@ router.post('/api/scan', async (req, res) => {
     // Start scan asynchronously
     const scanPromise = scanPackage(request);
     
-    // Store initial status
+    // Store initial status with timestamp for TTL
     scans.set(scanId, {
       id: scanId,
       status: 'scanning',
       request,
+      createdAt: Date.now(),
     });
     
     // Return scan ID immediately

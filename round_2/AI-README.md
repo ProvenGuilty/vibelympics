@@ -236,9 +236,28 @@ ResultsView polls `/api/scan/:id` until status is 'completed'.
 
 ---
 
+## 🔒 HTTPS Configuration
+
+The server supports HTTPS with automatic HTTP→HTTPS redirect:
+
+```typescript
+// Environment variables
+HTTPS_PORT=8443        // HTTPS server port
+ENABLE_HTTPS=true      // Enable HTTPS (auto-enabled in production)
+PORT=8080              // HTTP port (redirects to HTTPS when enabled)
+```
+
+Certificates are stored in `certs/server.key` and `certs/server.crt` (self-signed for development).
+
+---
+
 ## 📁 File Structure (Actual)
 
 ```
+certs/
+├── server.key         # TLS private key
+└── server.crt         # TLS certificate
+
 src/
 ├── client/
 │   ├── App.tsx

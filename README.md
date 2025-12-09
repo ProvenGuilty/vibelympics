@@ -47,6 +47,28 @@ After registering, take next steps:
 
 **📖 Full Details:** See [round_1/README.md](./round_1/README.md)
 
+---
+
+### Round 2: The Weakest Lynx 🐆🔗
+
+> A supply chain security auditor that finds your weakest dependencies before attackers do.
+
+**📁 Project:** [`round_2/`](./round_2/)
+
+**🎯 Features:**
+- 🔍 Multi-ecosystem scanning (PyPI, npm, Maven, Go, RubyGems)
+- 🔴 Real-time CVE lookup via OSV.dev API
+- 📊 Security scoring (0-100) based on vulnerability severity
+- 🌳 Dependency tree visualization with vuln indicators
+- 🔄 Version comparison to track security posture changes
+- 📋 Remediation suggestions with upgrade recommendations
+- 🔒 HTTPS by default with HTTP→HTTPS redirect
+- 🐆 Animated lynx mascot (because security tools should be fun)
+
+**📖 Full Details:** See [round_2/README.md](./round_2/README.md)
+
+---
+
 ## Schedule
 
 <table role="table" aria-label="Vibelympics Competition Schedule">

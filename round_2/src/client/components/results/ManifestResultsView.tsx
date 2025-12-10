@@ -143,7 +143,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
           </div>
         </div>
 
-        {/* Package Tabs */}
+        {/* Package Tabs - sorted by vuln count (highest first) */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           <button
             onClick={() => setSelectedPackage(null)}
@@ -155,7 +155,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
           >
             📊 Overview
           </button>
-          {packageScans.map((pkg) => (
+          {[...packageScans].sort((a, b) => (b.summary?.total || 0) - (a.summary?.total || 0)).map((pkg) => (
             <button
               key={pkg.id}
               onClick={() => setSelectedPackage(pkg.id)}
@@ -187,11 +187,11 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
             <RemediationQueue remediations={scan.remediations} />
           </div>
 
-          {/* Package Summary Cards */}
+          {/* Package Summary Cards - sorted by vuln count */}
           <div>
             <h3 className="text-xl font-bold mb-4">Packages ({packageScans.length})</h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {packageScans.map((pkg) => (
+              {[...packageScans].sort((a, b) => (b.summary?.total || 0) - (a.summary?.total || 0)).map((pkg) => (
                 <button
                   key={pkg.id}
                   onClick={() => setSelectedPackage(pkg.id)}

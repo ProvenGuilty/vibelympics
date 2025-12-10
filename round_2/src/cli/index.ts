@@ -6,6 +6,7 @@
  * 
  * Usage:
  *   lynx scan <ecosystem> <package> [options]
+ *   lynx file <path> [options]
  *   lynx server [options]
  *   lynx health [options]
  */
@@ -15,6 +16,7 @@ process.env.LYNX_CLI_MODE = 'true';
 
 import { Command } from 'commander';
 import { scanCommand } from './commands/scan.js';
+import { fileCommand } from './commands/file.js';
 import { serverCommand } from './commands/server.js';
 import { healthCommand } from './commands/health.js';
 
@@ -27,6 +29,7 @@ program
 
 // Register commands
 program.addCommand(scanCommand);
+program.addCommand(fileCommand);
 program.addCommand(serverCommand);
 program.addCommand(healthCommand);
 

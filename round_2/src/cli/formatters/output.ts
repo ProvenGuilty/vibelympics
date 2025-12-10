@@ -5,6 +5,7 @@
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { ScanResponse, Vulnerability, Dependency } from '../../server/types.js';
+import { exportSarif } from '../../server/services/export/sarif.js';
 
 /**
  * Format severity with color
@@ -420,4 +421,12 @@ export function formatDeepScan(result: ScanResponse, format: string = 'table'): 
   
   output.push('');
   return output.join('\n');
+}
+
+/**
+ * Format results as SARIF (for GitHub Security tab / CI integration)
+ */
+export function formatSarif(result: ScanResponse): string {
+  const sarif = exportSarif(result);
+  return JSON.stringify(sarif, null, 2);
 }

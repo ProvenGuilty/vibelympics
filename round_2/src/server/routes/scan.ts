@@ -1,7 +1,11 @@
 import { Router } from 'express';
-import { ScanRequest } from '../types.js';
+import { ScanRequest, ScanResponse, Dependency, Vulnerability } from '../types.js';
 import { scanPackage } from '../services/scanner/index.js';
 import { logger } from '../logger.js';
+import { parseManifest, detectEcosystem } from '../services/parsers/manifest.js';
+import { queryOsv } from '../services/scanner/osv.js';
+import { calculateSecurityScore } from '../services/scanner/score.js';
+import { generateRemediations } from '../services/remediation/engine.js';
 
 const router = Router();
 
@@ -76,6 +80,111 @@ router.post('/api/scan', async (req, res) => {
   }
 });
 
+// File upload scan endpoint
+router.post('/api/scan/file', async (req, res) => {
+  try {
+    const { content, fileName } = req.body;
+    
+    if (!content || !fileName) {
+      return res.status(400).json({ error: 'Must provide content and fileName' });
+    }
+    
+    // Parse the manifest file
+    const manifest = parseManifest(content, fileName);
+    
+    if (manifest.dependencies.length === 0) {
+      return res.status(400).json({ error: 'No dependencies found in file' });
+    }
+    
+    const scanId = `scan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Store initial status
+    scans.set(scanId, {
+      id: scanId,
+      status: 'scanning',
+      ecosystem: manifest.ecosystem,
+      target: fileName,
+      createdAt: Date.now(),
+    });
+    
+    // Return scan ID immediately
+    res.json({ id: scanId, status: 'scanning', dependencyCount: manifest.dependencies.length });
+    
+    // Scan dependencies in background
+    scanManifestDependencies(scanId, manifest).catch(error => {
+      logger.error({ error, scanId }, 'File scan failed');
+      scans.set(scanId, {
+        id: scanId,
+        status: 'error',
+        error: error.message,
+      });
+    });
+    
+  } catch (error: any) {
+    logger.error({ error }, 'File scan request failed');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper function to scan manifest dependencies
+async function scanManifestDependencies(scanId: string, manifest: ReturnType<typeof parseManifest>) {
+  const dependencies: Dependency[] = [];
+  const vulnerabilities: Vulnerability[] = [];
+  
+  for (const dep of manifest.dependencies) {
+    // Query OSV for each dependency
+    const vulns = await queryOsv(dep.name, manifest.ecosystem, dep.version || 'latest');
+    
+    const severities = vulns.map(v => v.severity);
+    const maxSeverity: 'critical' | 'high' | 'medium' | 'low' | 'none' = 
+      severities.includes('critical') ? 'critical' :
+      severities.includes('high') ? 'high' :
+      severities.includes('medium') ? 'medium' :
+      severities.includes('low') ? 'low' : 'none';
+    
+    dependencies.push({
+      name: dep.name,
+      version: dep.version || 'latest',
+      ecosystem: manifest.ecosystem,
+      direct: true,
+      vulnerabilityCount: vulns.length,
+      maxSeverity,
+    });
+    
+    vulnerabilities.push(...vulns);
+  }
+  
+  const summary = {
+    critical: vulnerabilities.filter(v => v.severity === 'critical').length,
+    high: vulnerabilities.filter(v => v.severity === 'high').length,
+    medium: vulnerabilities.filter(v => v.severity === 'medium').length,
+    low: vulnerabilities.filter(v => v.severity === 'low').length,
+    total: vulnerabilities.length,
+  };
+  
+  const securityScore = calculateSecurityScore({
+    vulnerabilities,
+    dependencyCount: dependencies.length,
+    directDependencyCount: dependencies.length,
+  });
+  
+  const remediations = await generateRemediations(vulnerabilities, dependencies);
+  
+  scans.set(scanId, {
+    id: scanId,
+    status: 'completed',
+    ecosystem: manifest.ecosystem,
+    target: manifest.fileName,
+    version: 'file',
+    scanDate: new Date().toISOString(),
+    securityScore,
+    summary,
+    dependencies,
+    vulnerabilities,
+    remediations,
+  });
+}
+
 router.get('/api/scan/:id', (req, res) => {
   const scan = scans.get(req.params.id);
   if (!scan) {
@@ -122,6 +231,12 @@ router.get('/api/scan/:id/export', async (req, res) => {
     res.setHeader('Content-Type', 'text/markdown');
     res.setHeader('Content-Disposition', `attachment; filename="scan-${scan.id}.md"`);
     res.send(md);
+  } else if (format === 'sarif') {
+    const { exportSarif } = await import('../services/export/sarif.js');
+    const sarif = exportSarif(scan);
+    res.setHeader('Content-Type', 'application/sarif+json');
+    res.setHeader('Content-Disposition', `attachment; filename="scan-${scan.id}.sarif.json"`);
+    res.json(sarif);
   } else {
     res.json(scan);
   }

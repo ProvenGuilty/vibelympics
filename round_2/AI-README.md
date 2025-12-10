@@ -69,17 +69,17 @@
 |---------|--------|
 | CLI Mode | ✅ Implemented |
 | Container/Image Scanning | ❌ Not implemented |
-| File Upload (requirements.txt, etc.) | ❌ Not implemented |
+| File Upload (requirements.txt, etc.) | ✅ Implemented |
 | Grype Integration | ❌ Not implemented (OSV only) |
 | Syft SBOM | ❌ Not implemented |
 | AI Code Suggestions | ❌ Not implemented |
 | GitHub PR Creation | ❌ Not implemented |
 | GitHub OAuth | ❌ Not implemented |
-| SARIF Export | ❌ Not implemented |
+| SARIF Export | ✅ Implemented |
 | Code Pattern Matching | ❌ Not implemented |
 | Side-by-Side Comparison View | ❌ Not implemented |
 | Interactive Accept/Skip Fixes | ❌ Not implemented |
-| D3.js/Cytoscape Dependency Graph | ❌ Not implemented (list only) |
+| D3.js Dependency Graph | ✅ Implemented |
 
 ---
 

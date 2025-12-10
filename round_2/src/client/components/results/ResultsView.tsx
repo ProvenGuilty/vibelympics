@@ -4,6 +4,8 @@ import VulnerabilityList from './VulnerabilityList';
 import RemediationQueue from './RemediationQueue';
 import ScanMetadataPanel from './ScanMetadataPanel';
 import DependencyTree from './DependencyTree';
+import DependencyGraph from './DependencyGraph';
+import DependencyModal from './DependencyModal';
 import VersionSelector from './VersionSelector';
 
 interface ResultsViewProps {
@@ -16,6 +18,8 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rescanning, setRescanning] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
+  const [selectedDep, setSelectedDep] = useState<any>(null);
 
   const handleVersionChange = async (newVersion: string) => {
     if (!scan) return;
@@ -167,12 +171,56 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
       
       {!rescanning && (
         <>
-          {/* Dependency Tree */}
-          <DependencyTree 
-            dependencies={scan.dependencies} 
-            targetPackage={scan.target}
-            targetVersion={scan.version}
-          />
+          {/* View Mode Toggle */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold">Dependencies</h3>
+            <div className="flex bg-slate-800 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-violet-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                📋 List
+              </button>
+              <button
+                onClick={() => setViewMode('graph')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'graph'
+                    ? 'bg-violet-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🕸️ Graph
+              </button>
+            </div>
+          </div>
+
+          {/* Dependency View */}
+          {viewMode === 'list' ? (
+            <DependencyTree 
+              dependencies={scan.dependencies} 
+              targetPackage={scan.target}
+              targetVersion={scan.version}
+            />
+          ) : (
+            <DependencyGraph
+              dependencies={scan.dependencies}
+              targetPackage={scan.target}
+              targetVersion={scan.version}
+              onSelectDependency={setSelectedDep}
+            />
+          )}
+
+          {/* Dependency Modal */}
+          {selectedDep && (
+            <DependencyModal
+              dependency={selectedDep}
+              onClose={() => setSelectedDep(null)}
+            />
+          )}
           
           {/* Scan Metadata - Technical Details */}
           {scan.scanMetadata && (

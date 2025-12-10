@@ -535,7 +535,34 @@ export function formatTree(result: ScanResponse): string {
   } else {
     output.push(`${chalk.green('✓')} ${depCount} dependencies, ${chalk.green.bold('0 vulnerabilities')}`);
   }
-  output.push('');
+  
+  // Remediation suggestions
+  if (result.remediations && result.remediations.length > 0) {
+    output.push('');
+    output.push(chalk.yellow.bold('📋 Suggested Fixes:'));
+    output.push('');
+    
+    for (const rem of result.remediations) {
+      const breaking = rem.isBreaking ? chalk.red(' ⚠ BREAKING') : '';
+      const riskColor = rem.riskLevel === 'high' ? chalk.red : 
+                        rem.riskLevel === 'medium' ? chalk.yellow : chalk.green;
+      
+      output.push(`  ${chalk.cyan('→')} ${chalk.bold(rem.package)}: ${rem.currentVersion} → ${chalk.green(rem.targetVersion)}${breaking}`);
+      output.push(`    ${chalk.gray('Risk:')} ${riskColor(rem.riskLevel || 'low')} | ${chalk.gray('Fixes:')} ${rem.vulnerabilitiesFixed.length} vuln${rem.vulnerabilitiesFixed.length > 1 ? 's' : ''}`);
+      
+      // Show breaking changes if any
+      if (rem.breakingChanges && rem.breakingChanges.length > 0) {
+        for (const bc of rem.breakingChanges.slice(0, 2)) {
+          output.push(`    ${chalk.red('!')} ${bc.description}`);
+        }
+        if (rem.breakingChanges.length > 2) {
+          output.push(`    ${chalk.gray(`  ... and ${rem.breakingChanges.length - 2} more`)}`);
+        }
+      }
+      
+      output.push('');
+    }
+  }
   
   return output.join('\n');
 }

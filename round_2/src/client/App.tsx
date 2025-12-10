@@ -93,7 +93,7 @@ function AppContent() {
                 )}
                 
                 <a
-                  href="https://github.com/chainguard-demo/vibelympics/tree/main/round_2"
+                  href="https://github.com/provenguilty/vibelympics/tree/main/round_2"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`px-4 py-2 rounded-lg transition-all text-xl ${

@@ -30,7 +30,7 @@ export function detectEcosystem(fileName: string): ParsedManifest['ecosystem'] |
   if (name === 'requirements.txt' || name.endsWith('.txt') && name.includes('requirements')) {
     return 'pypi';
   }
-  if (name === 'package.json' || name === 'package-lock.json') {
+  if (name === 'package.json' || name === 'package-lock.json' || name.endsWith('.json')) {
     return 'npm';
   }
   if (name === 'go.mod' || name === 'go.sum') {

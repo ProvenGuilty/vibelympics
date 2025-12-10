@@ -69,7 +69,7 @@
 |---------|--------|
 | CLI Mode | ✅ Implemented |
 | Container/Image Scanning | ❌ Not implemented |
-| File Upload (requirements.txt, etc.) | ✅ Implemented |
+| File Upload (manifest files) | ✅ Implemented |
 | Grype Integration | ❌ Not implemented (OSV only) |
 | Syft SBOM | ❌ Not implemented |
 | AI Code Suggestions | ❌ Not implemented |
@@ -77,9 +77,12 @@
 | GitHub OAuth | ❌ Not implemented |
 | SARIF Export | ✅ Implemented |
 | Code Pattern Matching | ❌ Not implemented |
-| Side-by-Side Comparison View | ❌ Not implemented |
+| Side-by-Side Version Comparison | ✅ Implemented |
 | Interactive Accept/Skip Fixes | ❌ Not implemented |
-| D3.js Dependency Graph | ✅ Implemented |
+| Batch Export (manifest scans) | ✅ Implemented |
+| Real-time Scan Progress | ✅ Implemented |
+| Skeleton Loading States | ✅ Implemented |
+| Contextual Error Handling | ✅ Implemented |
 
 ---
 

@@ -91,12 +91,15 @@ The Weakest Lynx scans your software dependencies and shows you:
 | Feature | Description |
 |---------|-------------|
 | 🔍 **Multi-Ecosystem Scanning** | Scan packages from PyPI, npm, Maven, Go, RubyGems |
+| 📁 **Manifest File Upload** | Upload package.json, requirements.txt, go.mod, Gemfile, pom.xml |
 | 🔴 **Vulnerability Detection** | Real-time CVE lookup via OSV.dev API |
 | 📊 **Security Scoring** | 0-100 score based on vulnerability severity |
 | 🌳 **Dependency Tree** | View all transitive dependencies with vuln counts |
 | 🔄 **Version Comparison** | Switch versions to compare security posture |
+| ⚖️ **Side-by-Side Diff** | Compare two versions with security score diff |
 | 📋 **Remediation Suggestions** | Upgrade recommendations with changelog links |
-| 📥 **Export Reports** | Download as JSON or Markdown |
+| 📥 **Export Reports** | Download as JSON, Markdown, or SARIF (GitHub) |
+| 📺 **Real-time Progress** | Watch scan progress with live log output |
 | 🦑 **Animated Mascot** | Because security tools should be fun |
 
 ---
@@ -106,6 +109,7 @@ The Weakest Lynx scans your software dependencies and shows you:
 ### Scan Form
 - Select ecosystem from dropdown (PyPI, npm, Maven, Go, RubyGems)
 - Enter package name (with optional `@version`)
+- **Upload manifest files** (drag & drop or click to browse)
 - Popular package suggestions for quick testing
 - Live search for PyPI packages
 
@@ -113,9 +117,17 @@ The Weakest Lynx scans your software dependencies and shows you:
 - **Sticky header** with package name, version, and "New Scan" button
 - **Security score** (0-100) with severity breakdown
 - **Version selector** dropdown to scan different versions
+- **Version diff** - compare security posture between versions
 - **Dependency tree** showing all packages with vulnerability indicators
 - **Vulnerability list** with CVE details, severity, and fix versions
 - **Remediation queue** with upgrade suggestions
+- **Export** to JSON, Markdown, or SARIF format
+
+### Manifest Scan View
+- **Tabbed navigation** - click packages sorted by vulnerability count
+- **Overview tab** - aggregate score and vulnerability summary
+- **Per-package results** - full scan with version comparison for each
+- **Batch export** - export all results as single report
 
 ---
 

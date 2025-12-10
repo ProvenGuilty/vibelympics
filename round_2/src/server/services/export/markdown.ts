@@ -1,6 +1,6 @@
 import { ScanResponse } from '../../types.js';
 
-export function exportMarkdown(scan: ScanResponse): string {
+export function exportMarkdown(scan: ScanResponse & { packageScans?: any[]; isManifestScan?: boolean }): string {
   const lines: string[] = [];
   
   lines.push(`# Security Scan Report: ${scan.target}`);
@@ -19,6 +19,23 @@ export function exportMarkdown(scan: ScanResponse): string {
   lines.push(`- 🟢 Low: ${scan.summary.low}`);
   lines.push(`- **Total:** ${scan.summary.total}`);
   lines.push('');
+  
+  // Package breakdown for manifest scans
+  if (scan.isManifestScan && scan.packageScans && scan.packageScans.length > 0) {
+    lines.push('## Packages Scanned');
+    lines.push('');
+    lines.push('| Package | Version | Score | Critical | High | Medium | Low |');
+    lines.push('|---------|---------|-------|----------|------|--------|-----|');
+    
+    // Sort by total vulns descending
+    const sorted = [...scan.packageScans].sort((a, b) => (b.summary?.total || 0) - (a.summary?.total || 0));
+    
+    for (const pkg of sorted) {
+      const s = pkg.summary || { critical: 0, high: 0, medium: 0, low: 0 };
+      lines.push(`| ${pkg.name} | ${pkg.version} | ${pkg.securityScore}/100 | ${s.critical} | ${s.high} | ${s.medium} | ${s.low} |`);
+    }
+    lines.push('');
+  }
   
   if (scan.vulnerabilities.length > 0) {
     lines.push('## Vulnerabilities');

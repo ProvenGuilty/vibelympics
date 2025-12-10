@@ -5,6 +5,7 @@ import RemediationQueue from './RemediationQueue';
 import ScanMetadataPanel from './ScanMetadataPanel';
 import DependencyTree from './DependencyTree';
 import VersionSelector from './VersionSelector';
+import VersionDiff from './VersionDiff';
 import ManifestResultsView from './ManifestResultsView';
 import { ResultsPageSkeleton } from '../ui/Skeleton';
 import ErrorDisplay from '../ui/ErrorDisplay';
@@ -206,6 +207,16 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
       
       {!rescanning && (
         <>
+          {/* Version Comparison */}
+          {scan.version !== 'manifest' && (
+            <VersionDiff
+              packageName={scan.target}
+              ecosystem={scan.ecosystem}
+              currentVersion={scan.version}
+              currentScan={scan}
+            />
+          )}
+
           {/* Dependencies */}
           <DependencyTree 
             dependencies={scan.dependencies} 

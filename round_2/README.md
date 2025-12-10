@@ -45,6 +45,22 @@ npm run dev
 # Open http://localhost:5173
 ```
 
+### Option 3: CLI (No Server Required)
+
+```bash
+# Install dependencies
+npm install
+
+# Scan a package directly from command line
+npm run lynx -- scan npm express
+npm run lynx -- scan pypi requests --deep
+npm run lynx -- scan npm lodash -o json
+
+# Check CLI help
+npm run lynx -- --help
+npm run lynx -- scan --help
+```
+
 ---
 
 ## 📖 What Does It Do?
@@ -100,6 +116,63 @@ The Weakest Lynx scans your software dependencies and shows you:
 - **Dependency tree** showing all packages with vulnerability indicators
 - **Vulnerability list** with CVE details, severity, and fix versions
 - **Remediation queue** with upgrade suggestions
+
+---
+
+## 🖥️ CLI Reference
+
+The CLI allows scanning packages directly from the command line without starting the web server.
+
+### Commands
+
+```bash
+# Scan a package
+lynx scan <ecosystem> <package> [options]
+
+# Check server health
+lynx health <url>
+
+# Start web server
+lynx server [options]
+```
+
+### Scan Options
+
+| Option | Description |
+|--------|-------------|
+| `--ver <version>` | Specific package version (default: latest) |
+| `-o, --output <format>` | Output: table, json, markdown, summary |
+| `-d, --deep` | Show per-dependency vulnerability details |
+| `-s, --server <url>` | Use remote server instead of local scan |
+| `-t, --timeout <sec>` | Timeout in seconds (default: 60) |
+| `--verbose` | Enable verbose logging |
+
+### Examples
+
+```bash
+# Basic scan
+npm run lynx -- scan npm express
+
+# Scan specific version with deep dependency view
+npm run lynx -- scan pypi django --ver 2.2 --deep
+
+# Output as JSON for scripting
+npm run lynx -- scan npm lodash -o json
+
+# One-line summary for CI/CD
+npm run lynx -- scan npm axios -o summary
+
+# Scan via remote server
+npm run lynx -- scan npm express --server http://localhost:8080
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success, no critical/high vulnerabilities |
+| 1 | Critical or high vulnerabilities found |
+| 2 | Scan error |
 
 ---
 

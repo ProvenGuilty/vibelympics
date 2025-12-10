@@ -67,7 +67,7 @@
 
 | Feature | Status |
 |---------|--------|
-| CLI Mode | ❌ Not implemented |
+| CLI Mode | ✅ Implemented |
 | Container/Image Scanning | ❌ Not implemented |
 | File Upload (requirements.txt, etc.) | ❌ Not implemented |
 | Grype Integration | ❌ Not implemented (OSV only) |
@@ -80,6 +80,73 @@
 | Side-by-Side Comparison View | ❌ Not implemented |
 | Interactive Accept/Skip Fixes | ❌ Not implemented |
 | D3.js/Cytoscape Dependency Graph | ❌ Not implemented (list only) |
+
+---
+
+## 🖥️ CLI Reference
+
+### Installation
+
+```bash
+# Run directly with npm
+npm run lynx -- <command>
+
+# Or build and install globally
+npm run build:cli
+npm link
+lynx <command>
+```
+
+### Commands
+
+```bash
+# Scan a package (standalone mode - no server needed)
+lynx scan <ecosystem> <package> [options]
+
+# Examples:
+lynx scan npm lodash                    # Scan latest lodash
+lynx scan pypi requests -o json         # Output as JSON
+lynx scan npm express -o markdown       # Output as Markdown
+lynx scan go github.com/gin-gonic/gin   # Scan Go module
+
+# Scan via remote server (API client mode)
+lynx scan npm axios --server http://localhost:8080
+
+# Check server health
+lynx health http://localhost:8080
+
+# Start the web server
+lynx server --port 8080
+```
+
+### Scan Options
+
+| Option | Description | Default |
+|--------|-------------|--------|
+| `-v, --version <ver>` | Specific version to scan | latest |
+| `-o, --output <fmt>` | Output format: table, json, markdown, summary | table |
+| `-s, --server <url>` | Use remote server instead of local scan | - |
+| `-t, --timeout <sec>` | Timeout in seconds | 60 |
+| `--verbose` | Enable verbose logging | false |
+
+### Exit Codes
+
+| Code | Meaning |
+|------|--------|
+| 0 | Success, no critical/high vulnerabilities |
+| 1 | Scan completed but critical/high vulnerabilities found |
+| 2 | Scan failed (error) |
+
+### CLI Files
+
+| File | Purpose |
+|------|--------|
+| `src/cli/index.ts` | CLI entry point |
+| `src/cli/commands/scan.ts` | Scan command |
+| `src/cli/commands/server.ts` | Server command |
+| `src/cli/commands/health.ts` | Health check command |
+| `src/cli/formatters/output.ts` | Table/JSON/Markdown formatters |
+| `src/cli/utils/api-client.ts` | Remote server API client |
 
 ---
 

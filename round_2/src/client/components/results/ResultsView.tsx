@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ScoreCard from './ScoreCard';
 import VulnerabilityList from './VulnerabilityList';
 import RemediationQueue from './RemediationQueue';
@@ -6,6 +6,8 @@ import ScanMetadataPanel from './ScanMetadataPanel';
 import DependencyTree from './DependencyTree';
 import VersionSelector from './VersionSelector';
 import ManifestResultsView from './ManifestResultsView';
+import { ResultsPageSkeleton } from '../ui/Skeleton';
+import ErrorDisplay from '../ui/ErrorDisplay';
 
 interface ResultsViewProps {
   scanId: string;
@@ -94,29 +96,24 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
     fetchScan();
   }, [scanId]);
 
+  const handleRetry = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    // Re-trigger the useEffect by forcing a re-render
+    window.location.reload();
+  }, []);
+
   if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-4xl mb-4">🐆</div>
-        <div className="text-xl">Scanning dependencies...</div>
-      </div>
-    );
+    return <ResultsPageSkeleton />;
   }
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-6 rounded-lg">
-          <h3 className="font-bold mb-2">Scan Error</h3>
-          <p>{error}</p>
-          <button
-            onClick={onBack}
-            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-          >
-            Back to Scan
-          </button>
-        </div>
-      </div>
+      <ErrorDisplay 
+        error={error} 
+        onRetry={handleRetry}
+        onBack={onBack}
+      />
     );
   }
 

@@ -4,6 +4,7 @@ import VulnerabilityList from './VulnerabilityList';
 import RemediationQueue from './RemediationQueue';
 import DependencyTree from './DependencyTree';
 import VersionSelector from './VersionSelector';
+import { ScoreCardSkeleton, VulnerabilityListSkeleton } from '../ui/Skeleton';
 
 interface PackageScan {
   id: string;
@@ -132,19 +133,19 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
     <div className="space-y-6">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-sm py-4 -mx-4 px-4 border-b border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold">
-              Manifest Scan: <span className="font-mono text-violet-400">{scan.target}</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold truncate">
+              Manifest: <span className="font-mono text-violet-400">{scan.target}</span>
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              {packageScans.length} packages · {scan.summary.total} vulnerabilities · Score: {scan.securityScore}/100
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              {packageScans.length} packages · {scan.summary.total} vulns · Score: {scan.securityScore}/100
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <div className="relative group">
-              <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium flex items-center gap-2">
-                📥 Export
+              <button className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium flex items-center gap-1 text-sm">
+                📥 <span className="hidden sm:inline">Export</span>
               </button>
               <div className="absolute right-0 mt-1 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <a href={`/api/scan/${scan.id}/export?format=json`} download className="block px-4 py-2 hover:bg-slate-700 rounded-t-lg">📄 JSON</a>
@@ -152,14 +153,29 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
                 <a href={`/api/scan/${scan.id}/export?format=sarif`} download className="block px-4 py-2 hover:bg-slate-700 rounded-b-lg">🔒 SARIF</a>
               </div>
             </div>
-            <button onClick={onBack} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium">
-              ← New Scan
+            <button onClick={onBack} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium text-sm">
+              ← <span className="hidden sm:inline">New Scan</span>
             </button>
           </div>
         </div>
 
         {/* Package Tabs - sorted by vuln count (highest first) */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        {/* Mobile: dropdown, Desktop: horizontal tabs */}
+        <div className="md:hidden mb-2">
+          <select
+            value={selectedPackage || ''}
+            onChange={(e) => setSelectedPackage(e.target.value || null)}
+            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg font-medium text-white"
+          >
+            <option value="">📊 Overview ({packageScans.length} packages)</option>
+            {sortedPackages.map((pkg) => (
+              <option key={pkg.id} value={pkg.id}>
+                {pkg.name} {pkg.summary.total > 0 ? `⚠ ${pkg.summary.total}` : '✓'}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="hidden md:flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-600">
           <button
             onClick={() => setSelectedPackage(null)}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
@@ -180,7 +196,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
                   : `bg-slate-800 text-slate-300 hover:bg-slate-700 ${getSeverityColor(pkg)}`
               }`}
             >
-              <span className="font-mono">{pkg.name}</span>
+              <span className="font-mono text-sm">{pkg.name}</span>
               {pkg.summary.total > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 text-xs rounded bg-red-500/20 text-red-300">
                   {pkg.summary.total}
@@ -240,9 +256,12 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
           </div>
         </>
       ) : loadingPackage ? (
-        <div className="text-center py-12">
-          <div className="text-4xl mb-4 animate-pulse">📦</div>
-          <div className="text-xl">Loading package details...</div>
+        <div className="space-y-6">
+          <ScoreCardSkeleton />
+          <div className="grid md:grid-cols-2 gap-6">
+            <VulnerabilityListSkeleton />
+            <VulnerabilityListSkeleton />
+          </div>
         </div>
       ) : packageScan ? (
         /* Individual Package View - full scan results with version selector */

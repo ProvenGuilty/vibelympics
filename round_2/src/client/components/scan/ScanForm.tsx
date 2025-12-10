@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface ScanFormProps {
-  onScanComplete: (scanId: string) => void;
+  onScanStart: (scanId: string, isManifest?: boolean) => void;
 }
 
 // Popular packages for quick selection
@@ -35,7 +35,7 @@ const POPULAR_PACKAGES = {
   ]
 };
 
-export default function ScanForm({ onScanComplete }: ScanFormProps) {
+export default function ScanForm({ onScanStart }: ScanFormProps) {
   const [scanMode, setScanMode] = useState<'package' | 'file'>('package');
   const [ecosystem, setEcosystem] = useState('pypi');
   const [packageInput, setPackageInput] = useState('');
@@ -113,7 +113,8 @@ export default function ScanForm({ onScanComplete }: ScanFormProps) {
       }
 
       const data = await response.json();
-      onScanComplete(data.id);
+      // File scans are manifest scans - show progress
+      onScanStart(data.id, true);
     } catch (err: any) {
       setError(err.message || 'Failed to scan file');
       setLoading(false);
@@ -160,7 +161,8 @@ export default function ScanForm({ onScanComplete }: ScanFormProps) {
       }
 
       const data = await response.json();
-      onScanComplete(data.id);
+      // Package scans complete quickly - go straight to results
+      onScanStart(data.id, false);
     } catch (err: any) {
       setError(err.message || 'Failed to start scan');
       setLoading(false);

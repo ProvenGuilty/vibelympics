@@ -11,6 +11,7 @@ const router = Router();
 
 // In-memory scan storage with TTL cleanup
 const scans = new Map<string, any>();
+const scanProgress = new Map<string, { current: number; total: number; currentPackage: string; log: string[] }>();
 const SCAN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_SCANS = 1000;
 
@@ -131,18 +132,38 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
   const packageScans: any[] = [];
   const allVulnerabilities: Vulnerability[] = [];
   const allDependencies: Dependency[] = [];
+  const total = manifest.dependencies.length;
+  
+  // Initialize progress tracking
+  const progress = { current: 0, total, currentPackage: '', log: [] as string[] };
+  scanProgress.set(scanId, progress);
+  
+  const addLog = (msg: string) => {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    progress.log.push(`[${timestamp}] ${msg}`);
+    logger.info({ scanId, msg }, 'Scan progress');
+  };
+  
+  addLog(`Starting manifest scan: ${manifest.fileName} (${total} packages)`);
   
   // Scan each dependency as a full package (with its transitive deps)
-  for (const dep of manifest.dependencies) {
+  for (let i = 0; i < manifest.dependencies.length; i++) {
+    const dep = manifest.dependencies[i];
+    progress.current = i + 1;
+    progress.currentPackage = dep.name;
+    addLog(`[${i + 1}/${total}] Scanning ${dep.name}@${dep.version || 'latest'}...`);
+    
     try {
-      logger.info({ package: dep.name, version: dep.version }, 'Deep scanning package from manifest');
-      
       // Use the full scanPackage function for deep scanning
       const result = await scanPackage({
         ecosystem: manifest.ecosystem as any,
         package: dep.name,
         version: dep.version,
       });
+      
+      const vulnCount = result.vulnerabilities?.length || 0;
+      const depCount = result.dependencies?.length || 0;
+      addLog(`[${i + 1}/${total}] ✓ ${dep.name}: ${depCount} deps, ${vulnCount} vulns, score ${result.securityScore}`);
       
       // Store individual package scan
       const pkgScanId = `${scanId}-${dep.name}`;
@@ -158,7 +179,7 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
         version: result.version,
         securityScore: result.securityScore,
         summary: result.summary,
-        dependencyCount: result.dependencies?.length || 0,
+        dependencyCount: depCount,
       });
       
       // Aggregate vulnerabilities and dependencies
@@ -175,6 +196,7 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
         });
       }
     } catch (error: any) {
+      addLog(`[${i + 1}/${total}] ✗ ${dep.name}: ${error.message}`);
       logger.error({ error, package: dep.name }, 'Failed to scan package from manifest');
       packageScans.push({
         id: `${scanId}-${dep.name}`,
@@ -187,6 +209,8 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
       });
     }
   }
+  
+  addLog(`Scan complete: ${allVulnerabilities.length} total vulnerabilities found`);
   
   // Calculate aggregate summary
   const summary = {
@@ -335,6 +359,82 @@ router.get('/api/versions/:ecosystem/:package', async (req, res) => {
     logger.error({ error, ecosystem, packageName }, 'Failed to fetch versions');
     res.status(500).json({ error: error.message });
   }
+});
+
+// SSE endpoint for scan progress
+router.get('/api/scan/:id/progress', (req, res) => {
+  const scanId = req.params.id;
+  
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const sendProgress = () => {
+    const scan = scans.get(scanId);
+    const progress = scanProgress.get(scanId);
+    
+    if (!scan) {
+      res.write(`data: ${JSON.stringify({ error: 'Scan not found' })}\n\n`);
+      res.end();
+      return;
+    }
+
+    if (scan.status === 'completed' || scan.status === 'error') {
+      res.write(`data: ${JSON.stringify({ 
+        status: scan.status, 
+        complete: true,
+        error: scan.error 
+      })}\n\n`);
+      res.end();
+      scanProgress.delete(scanId);
+      return;
+    }
+
+    if (progress) {
+      res.write(`data: ${JSON.stringify({
+        status: 'scanning',
+        current: progress.current,
+        total: progress.total,
+        currentPackage: progress.currentPackage,
+        percent: Math.round((progress.current / progress.total) * 100),
+        log: progress.log.slice(-10), // Last 10 log entries
+      })}\n\n`);
+    }
+  };
+
+  // Send initial progress
+  sendProgress();
+
+  // Poll for updates
+  const interval = setInterval(sendProgress, 500);
+
+  // Cleanup on close
+  req.on('close', () => {
+    clearInterval(interval);
+  });
+});
+
+// Simple progress polling endpoint (non-SSE fallback)
+router.get('/api/scan/:id/status', (req, res) => {
+  const scanId = req.params.id;
+  const scan = scans.get(scanId);
+  const progress = scanProgress.get(scanId);
+  
+  if (!scan) {
+    return res.status(404).json({ error: 'Scan not found' });
+  }
+
+  res.json({
+    status: scan.status,
+    ...(progress && {
+      current: progress.current,
+      total: progress.total,
+      currentPackage: progress.currentPackage,
+      percent: Math.round((progress.current / progress.total) * 100),
+      log: progress.log.slice(-20),
+    }),
+  });
 });
 
 export default router;

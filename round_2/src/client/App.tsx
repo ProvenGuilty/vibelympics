@@ -1,21 +1,33 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import ScanForm from './components/scan/ScanForm';
 import ResultsView from './components/results/ResultsView';
+import ScanProgress from './components/scan/ScanProgress';
 import { LynxMascot } from './components/LynxMascot';
 
 export default function App() {
-  const [view, setView] = useState<'scan' | 'results'>('scan');
+  const [view, setView] = useState<'scan' | 'scanning' | 'results'>('scan');
   const [scanId, setScanId] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(true);
+  const [isManifestScan, setIsManifestScan] = useState(false);
 
-  const handleScanComplete = (id: string) => {
+  const handleScanStart = (id: string, manifest: boolean = false) => {
     setScanId(id);
-    setView('results');
+    setIsManifestScan(manifest);
+    if (manifest) {
+      setView('scanning');
+    } else {
+      setView('results');
+    }
   };
+
+  const handleScanComplete = useCallback(() => {
+    setView('results');
+  }, []);
 
   const handleBackToScan = () => {
     setView('scan');
     setScanId(null);
+    setIsManifestScan(false);
   };
 
   return (
@@ -59,7 +71,11 @@ export default function App() {
         
         <main className="container mx-auto px-4 py-8">
           {view === 'scan' && (
-            <ScanForm onScanComplete={handleScanComplete} />
+            <ScanForm onScanStart={handleScanStart} />
+          )}
+          
+          {view === 'scanning' && scanId && (
+            <ScanProgress scanId={scanId} onComplete={handleScanComplete} />
           )}
           
           {view === 'results' && scanId && (

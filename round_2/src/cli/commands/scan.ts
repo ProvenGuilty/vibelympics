@@ -11,11 +11,11 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { scanPackage } from '../../server/services/scanner/index.js';
 import { ScanRequest, ScanResponse } from '../../server/types.js';
-import { formatTable, formatJson, formatMarkdown, formatSummary, formatDeepScan, formatSarif } from '../formatters/output.js';
+import { formatTable, formatJson, formatMarkdown, formatSummary, formatDeepScan, formatSarif, formatTree } from '../formatters/output.js';
 import { ApiClient } from '../utils/api-client.js';
 
 type Ecosystem = 'pypi' | 'npm' | 'maven' | 'go' | 'rubygems';
-type OutputFormat = 'table' | 'json' | 'markdown' | 'summary' | 'sarif';
+type OutputFormat = 'table' | 'json' | 'markdown' | 'summary' | 'sarif' | 'tree';
 
 interface ScanOptions {
   ver?: string;
@@ -31,7 +31,7 @@ export const scanCommand = new Command('scan')
   .argument('<ecosystem>', 'Package ecosystem (pypi, npm, maven, go, rubygems)')
   .argument('<package>', 'Package name to scan')
   .option('--ver <version>', 'Specific package version to scan (default: latest)')
-  .option('-o, --output <format>', 'Output format: table, json, markdown, summary, sarif', 'table')
+  .option('-o, --output <format>', 'Output format: table, json, markdown, summary, sarif, tree', 'table')
   .option('-s, --server <url>', 'Connect to remote Lynx server instead of scanning locally')
   .option('-t, --timeout <seconds>', 'Timeout in seconds', '60')
   .option('--verbose', 'Enable verbose logging', false)
@@ -49,7 +49,7 @@ export const scanCommand = new Command('scan')
       }
 
       // Validate output format
-      const validFormats: OutputFormat[] = ['table', 'json', 'markdown', 'summary', 'sarif'];
+      const validFormats: OutputFormat[] = ['table', 'json', 'markdown', 'summary', 'sarif', 'tree'];
       if (!validFormats.includes(options.output as OutputFormat)) {
         console.error(chalk.red(`Error: Invalid output format "${options.output}"`));
         console.error(chalk.gray(`Valid formats: ${validFormats.join(', ')}`));
@@ -101,6 +101,9 @@ export const scanCommand = new Command('scan')
             break;
           case 'sarif':
             console.log(formatSarif(result));
+            break;
+          case 'tree':
+            console.log(formatTree(result));
             break;
           case 'table':
           default:

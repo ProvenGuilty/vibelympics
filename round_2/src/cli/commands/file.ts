@@ -12,9 +12,9 @@ import { queryOsv } from '../../server/services/scanner/osv.js';
 import { calculateSecurityScore } from '../../server/services/scanner/score.js';
 import { generateRemediations } from '../../server/services/remediation/engine.js';
 import { ScanResponse, Dependency, Vulnerability } from '../../server/types.js';
-import { formatTable, formatJson, formatMarkdown, formatSummary, formatDeepScan, formatSarif } from '../formatters/output.js';
+import { formatTable, formatJson, formatMarkdown, formatSummary, formatDeepScan, formatSarif, formatTree } from '../formatters/output.js';
 
-type OutputFormat = 'table' | 'json' | 'markdown' | 'summary' | 'sarif';
+type OutputFormat = 'table' | 'json' | 'markdown' | 'summary' | 'sarif' | 'tree';
 
 interface FileOptions {
   output: OutputFormat;
@@ -25,7 +25,7 @@ interface FileOptions {
 export const fileCommand = new Command('file')
   .description('Scan a manifest file for vulnerabilities')
   .argument('<path>', 'Path to manifest file (requirements.txt, package.json, go.mod, etc.)')
-  .option('-o, --output <format>', 'Output format: table, json, markdown, summary, sarif', 'table')
+  .option('-o, --output <format>', 'Output format: table, json, markdown, summary, sarif, tree', 'table')
   .option('-d, --deep', 'Deep scan: show vulnerabilities for each dependency', false)
   .option('--verbose', 'Enable verbose logging', false)
   .action(async (filePath: string, options: FileOptions) => {
@@ -142,6 +142,9 @@ export const fileCommand = new Command('file')
             break;
           case 'sarif':
             console.log(formatSarif(result));
+            break;
+          case 'tree':
+            console.log(formatTree(result));
             break;
           case 'table':
           default:

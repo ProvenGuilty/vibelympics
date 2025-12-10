@@ -430,3 +430,112 @@ export function formatSarif(result: ScanResponse): string {
   const sarif = exportSarif(result);
   return JSON.stringify(sarif, null, 2);
 }
+
+/**
+ * Format results as ASCII dependency tree
+ */
+export function formatTree(result: ScanResponse): string {
+  const output: string[] = [];
+  
+  // Header
+  output.push('');
+  output.push(chalk.cyan.bold('🐆 The Weakest Lynx - Dependency Tree'));
+  output.push(chalk.gray('═'.repeat(60)));
+  output.push(`${chalk.bold(result.target)}@${result.version} | Score: ${colorScore(result.securityScore)}`);
+  output.push('');
+  
+  // Build parent-child relationships
+  const childrenMap = new Map<string, Dependency[]>();
+  const rootDeps: Dependency[] = [];
+  
+  for (const dep of result.dependencies) {
+    if (dep.name === result.target) {
+      // Skip root package itself
+      continue;
+    }
+    
+    if (dep.parent) {
+      const children = childrenMap.get(dep.parent) || [];
+      children.push(dep);
+      childrenMap.set(dep.parent, children);
+    } else if (dep.direct) {
+      rootDeps.push(dep);
+    } else {
+      // Transitive without parent - attach to root
+      rootDeps.push(dep);
+    }
+  }
+  
+  // Sort: vulnerable first, then alphabetically
+  const sortDeps = (deps: Dependency[]) => {
+    return deps.sort((a, b) => {
+      if (a.vulnerabilityCount !== b.vulnerabilityCount) {
+        return b.vulnerabilityCount - a.vulnerabilityCount;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  };
+  
+  // Render tree recursively
+  const renderNode = (dep: Dependency, prefix: string, isLast: boolean): void => {
+    const connector = isLast ? '└── ' : '├── ';
+    const childPrefix = isLast ? '    ' : '│   ';
+    
+    // Status icon
+    let icon = chalk.green('✓');
+    if (dep.vulnerabilityCount > 0) {
+      switch (dep.maxSeverity) {
+        case 'critical': icon = chalk.red('✗'); break;
+        case 'high': icon = chalk.hex('#FFA500')('⚠'); break;
+        case 'medium': icon = chalk.yellow('●'); break;
+        default: icon = chalk.blue('○'); break;
+      }
+    }
+    
+    // Vulnerability badge
+    let vulnBadge = '';
+    if (dep.vulnerabilityCount > 0) {
+      vulnBadge = chalk.red(` (${dep.vulnerabilityCount} vuln${dep.vulnerabilityCount > 1 ? 's' : ''})`);
+    }
+    
+    output.push(`${prefix}${connector}${icon} ${dep.name}@${chalk.gray(dep.version)}${vulnBadge}`);
+    
+    // Render children
+    const children = sortDeps(childrenMap.get(dep.name) || []);
+    children.forEach((child, idx) => {
+      renderNode(child, prefix + childPrefix, idx === children.length - 1);
+    });
+  };
+  
+  // Render root node
+  const rootDep = result.dependencies.find(d => d.name === result.target);
+  if (rootDep) {
+    let rootIcon = chalk.green('✓');
+    if (rootDep.vulnerabilityCount > 0) {
+      rootIcon = rootDep.maxSeverity === 'critical' ? chalk.red('✗') : chalk.yellow('⚠');
+    }
+    output.push(`${rootIcon} ${chalk.bold(result.target)}@${result.version}`);
+  } else {
+    output.push(`📦 ${chalk.bold(result.target)}@${result.version}`);
+  }
+  
+  // Render direct dependencies
+  const sorted = sortDeps(rootDeps);
+  sorted.forEach((dep, idx) => {
+    renderNode(dep, '', idx === sorted.length - 1);
+  });
+  
+  // Summary
+  output.push('');
+  output.push(chalk.gray('─'.repeat(60)));
+  const vulnCount = result.summary.total;
+  const depCount = result.dependencies.length;
+  if (vulnCount > 0) {
+    output.push(`${chalk.red('⚠')} ${depCount} dependencies, ${chalk.red.bold(vulnCount + ' vulnerabilities')}`);
+  } else {
+    output.push(`${chalk.green('✓')} ${depCount} dependencies, ${chalk.green.bold('0 vulnerabilities')}`);
+  }
+  output.push('');
+  
+  return output.join('\n');
+}

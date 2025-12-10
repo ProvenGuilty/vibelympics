@@ -126,62 +126,106 @@ router.post('/api/scan/file', async (req, res) => {
   }
 });
 
-// Helper function to scan manifest dependencies
+// Helper function to scan manifest dependencies - does DEEP scans of each package
 async function scanManifestDependencies(scanId: string, manifest: ReturnType<typeof parseManifest>) {
-  const dependencies: Dependency[] = [];
-  const vulnerabilities: Vulnerability[] = [];
+  const packageScans: any[] = [];
+  const allVulnerabilities: Vulnerability[] = [];
+  const allDependencies: Dependency[] = [];
   
+  // Scan each dependency as a full package (with its transitive deps)
   for (const dep of manifest.dependencies) {
-    // Query OSV for each dependency
-    const vulns = await queryOsv(dep.name, manifest.ecosystem, dep.version || 'latest');
-    
-    const severities = vulns.map(v => v.severity);
-    const maxSeverity: 'critical' | 'high' | 'medium' | 'low' | 'none' = 
-      severities.includes('critical') ? 'critical' :
-      severities.includes('high') ? 'high' :
-      severities.includes('medium') ? 'medium' :
-      severities.includes('low') ? 'low' : 'none';
-    
-    dependencies.push({
-      name: dep.name,
-      version: dep.version || 'latest',
-      ecosystem: manifest.ecosystem,
-      direct: true,
-      vulnerabilityCount: vulns.length,
-      maxSeverity,
-    });
-    
-    vulnerabilities.push(...vulns);
+    try {
+      logger.info({ package: dep.name, version: dep.version }, 'Deep scanning package from manifest');
+      
+      // Use the full scanPackage function for deep scanning
+      const result = await scanPackage({
+        ecosystem: manifest.ecosystem as any,
+        package: dep.name,
+        version: dep.version,
+      });
+      
+      // Store individual package scan
+      const pkgScanId = `${scanId}-${dep.name}`;
+      scans.set(pkgScanId, {
+        ...result,
+        id: pkgScanId,
+        parentScanId: scanId,
+      });
+      
+      packageScans.push({
+        id: pkgScanId,
+        name: dep.name,
+        version: result.version,
+        securityScore: result.securityScore,
+        summary: result.summary,
+        dependencyCount: result.dependencies?.length || 0,
+      });
+      
+      // Aggregate vulnerabilities and dependencies
+      if (result.vulnerabilities) {
+        allVulnerabilities.push(...result.vulnerabilities);
+      }
+      if (result.dependencies) {
+        // Mark as coming from this package
+        result.dependencies.forEach((d: Dependency) => {
+          allDependencies.push({
+            ...d,
+            parent: d.parent || dep.name,
+          });
+        });
+      }
+    } catch (error: any) {
+      logger.error({ error, package: dep.name }, 'Failed to scan package from manifest');
+      packageScans.push({
+        id: `${scanId}-${dep.name}`,
+        name: dep.name,
+        version: dep.version || 'unknown',
+        error: error.message,
+        securityScore: 0,
+        summary: { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
+        dependencyCount: 0,
+      });
+    }
   }
   
+  // Calculate aggregate summary
   const summary = {
-    critical: vulnerabilities.filter(v => v.severity === 'critical').length,
-    high: vulnerabilities.filter(v => v.severity === 'high').length,
-    medium: vulnerabilities.filter(v => v.severity === 'medium').length,
-    low: vulnerabilities.filter(v => v.severity === 'low').length,
-    total: vulnerabilities.length,
+    critical: allVulnerabilities.filter(v => v.severity === 'critical').length,
+    high: allVulnerabilities.filter(v => v.severity === 'high').length,
+    medium: allVulnerabilities.filter(v => v.severity === 'medium').length,
+    low: allVulnerabilities.filter(v => v.severity === 'low').length,
+    total: allVulnerabilities.length,
   };
   
+  // Dedupe vulnerabilities by ID
+  const uniqueVulns = Array.from(
+    new Map(allVulnerabilities.map(v => [v.id, v])).values()
+  );
+  
   const securityScore = calculateSecurityScore({
-    vulnerabilities,
-    dependencyCount: dependencies.length,
-    directDependencyCount: dependencies.length,
+    vulnerabilities: uniqueVulns,
+    dependencyCount: allDependencies.length,
+    directDependencyCount: manifest.dependencies.length,
   });
   
-  const remediations = await generateRemediations(vulnerabilities, dependencies);
+  const remediations = await generateRemediations(uniqueVulns, allDependencies);
   
+  // Store manifest scan with package list
   scans.set(scanId, {
     id: scanId,
     status: 'completed',
     ecosystem: manifest.ecosystem,
     target: manifest.fileName,
-    version: 'file',
+    version: 'manifest',
     scanDate: new Date().toISOString(),
     securityScore,
     summary,
-    dependencies,
-    vulnerabilities,
+    dependencies: allDependencies,
+    vulnerabilities: uniqueVulns,
     remediations,
+    // NEW: List of individual package scans for tabbed UI
+    packageScans,
+    isManifestScan: true,
   });
 }
 

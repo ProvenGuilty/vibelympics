@@ -7,6 +7,7 @@ import DependencyTree from './DependencyTree';
 import DependencyGraph from './DependencyGraph';
 import DependencyModal from './DependencyModal';
 import VersionSelector from './VersionSelector';
+import ManifestResultsView from './ManifestResultsView';
 
 interface ResultsViewProps {
   scanId: string;
@@ -120,6 +121,11 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
   }
 
   if (!scan) return null;
+
+  // Use ManifestResultsView for manifest/file scans
+  if (scan.isManifestScan) {
+    return <ManifestResultsView scan={scan} onBack={onBack} />;
+  }
 
   return (
     <div className="space-y-8">

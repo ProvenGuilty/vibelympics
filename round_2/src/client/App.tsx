@@ -81,17 +81,16 @@ function AppContent() {
               
               {/* Right: Controls */}
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`px-4 py-2 rounded-lg transition-all text-xl ${
-                    isCyberpunk 
-                      ? 'bg-cyan-900/50 hover:bg-cyan-800/50 border border-cyan-500 shadow-[0_0_10px_rgba(0,255,255,0.3)]' 
-                      : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600'
-                  }`}
-                  title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  {darkMode ? '☀️' : '🌙'}
-                </button>
+                {/* Hide light/dark toggle in leet mode - it's always dark */}
+                {!isCyberpunk && (
+                  <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-all text-xl"
+                    title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                  >
+                    {darkMode ? '☀️' : '🌙'}
+                  </button>
+                )}
                 
                 <a
                   href="https://github.com/chainguard-demo/vibelympics/tree/main/round_2"

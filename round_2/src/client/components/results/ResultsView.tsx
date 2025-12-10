@@ -129,12 +129,45 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
           <h2 className="text-3xl font-bold">
             Scan Results: <span className="font-mono text-violet-400">{scan.target}@{scan.version}</span>
           </h2>
-          <button
-            onClick={onBack}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium"
-          >
-            ← New Scan
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Export Dropdown */}
+            <div className="relative group">
+              <button
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium flex items-center gap-2"
+              >
+                📥 Export
+              </button>
+              <div className="absolute right-0 mt-1 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <a
+                  href={`/api/scan/${scan.id}/export?format=json`}
+                  download={`scan-${scan.id}.json`}
+                  className="block px-4 py-2 hover:bg-slate-700 rounded-t-lg"
+                >
+                  📄 JSON
+                </a>
+                <a
+                  href={`/api/scan/${scan.id}/export?format=markdown`}
+                  download={`scan-${scan.id}.md`}
+                  className="block px-4 py-2 hover:bg-slate-700"
+                >
+                  📝 Markdown
+                </a>
+                <a
+                  href={`/api/scan/${scan.id}/export?format=sarif`}
+                  download={`scan-${scan.id}.sarif.json`}
+                  className="block px-4 py-2 hover:bg-slate-700 rounded-b-lg"
+                >
+                  🔒 SARIF (GitHub)
+                </a>
+              </div>
+            </div>
+            <button
+              onClick={onBack}
+              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium"
+            >
+              ← New Scan
+            </button>
+          </div>
         </div>
 
         {/* Version Selector */}

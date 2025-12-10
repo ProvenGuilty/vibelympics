@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface ScanFormProps {
   onScanComplete: (scanId: string) => void;
@@ -36,6 +36,7 @@ const POPULAR_PACKAGES = {
 };
 
 export default function ScanForm({ onScanComplete }: ScanFormProps) {
+  const [scanMode, setScanMode] = useState<'package' | 'file'>('package');
   const [ecosystem, setEcosystem] = useState('pypi');
   const [packageInput, setPackageInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -43,7 +44,10 @@ export default function ScanForm({ onScanComplete }: ScanFormProps) {
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Parse package input (supports "package@version" or just "package")
@@ -56,9 +60,74 @@ export default function ScanForm({ onScanComplete }: ScanFormProps) {
     return { package: trimmed, version: undefined };
   };
 
+  // Handle file drop
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleFileSubmit = async () => {
+    if (!selectedFile) {
+      setError('Please select a file');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const content = await selectedFile.text();
+      
+      const response = await fetch('/api/scan/file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          fileName: selectedFile.name,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Scan failed');
+      }
+
+      const data = await response.json();
+      onScanComplete(data.id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to scan file');
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (scanMode === 'file') {
+      handleFileSubmit();
+      return;
+    }
+
     if (!packageInput.trim()) {
       setError('Please enter a package name');
       return;
@@ -185,7 +254,35 @@ export default function ScanForm({ onScanComplete }: ScanFormProps) {
       <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-8 shadow-lg">
         <h2 className="text-2xl font-bold mb-6">What would you like to audit?</h2>
         
+        {/* Mode Toggle */}
+        <div className="flex bg-slate-200 dark:bg-slate-700 rounded-lg p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => setScanMode('package')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              scanMode === 'package'
+                ? 'bg-violet-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            📦 Package
+          </button>
+          <button
+            type="button"
+            onClick={() => setScanMode('file')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              scanMode === 'file'
+                ? 'bg-violet-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            📁 Upload File
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
+          {scanMode === 'package' ? (
+            <>
           <div>
             <label className="block text-sm font-medium mb-2">
               Ecosystem
@@ -316,9 +413,68 @@ export default function ScanForm({ onScanComplete }: ScanFormProps) {
             </div>
           )}
 
+            </>
+          ) : (
+            /* File Upload Mode */
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                dragActive
+                  ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20'
+                  : 'border-gray-300 dark:border-slate-600 hover:border-violet-400'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileChange}
+                accept=".txt,.json,.mod,.xml,Gemfile"
+                className="hidden"
+              />
+              
+              {selectedFile ? (
+                <div>
+                  <div className="text-4xl mb-3">✅</div>
+                  <div className="font-bold text-lg">{selectedFile.name}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {(selectedFile.size / 1024).toFixed(1)} KB
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFile(null)}
+                    className="mt-3 text-sm text-red-600 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div className="text-4xl mb-3">📁</div>
+                  <div className="font-bold">Drop your manifest file here</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    or{' '}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-violet-600 hover:text-violet-700 font-medium"
+                    >
+                      browse files
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-4">
+                    Supported: requirements.txt, package.json, go.mod, Gemfile, pom.xml
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (scanMode === 'file' && !selectedFile)}
             className="w-full px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
           >
             {loading ? '🔍 Scanning...' : '🔍 Scan'}

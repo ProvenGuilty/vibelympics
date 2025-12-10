@@ -129,6 +129,9 @@ The CLI allows scanning packages directly from the command line without starting
 # Scan a package
 lynx scan <ecosystem> <package> [options]
 
+# Scan a manifest file
+lynx file <path> [options]
+
 # Check server health
 lynx health <url>
 
@@ -141,7 +144,7 @@ lynx server [options]
 | Option | Description |
 |--------|-------------|
 | `--ver <version>` | Specific package version (default: latest) |
-| `-o, --output <format>` | Output: table, json, markdown, summary |
+| `-o, --output <format>` | Output: table, json, markdown, summary, sarif, tree |
 | `-d, --deep` | Show per-dependency vulnerability details |
 | `-s, --server <url>` | Use remote server instead of local scan |
 | `-t, --timeout <sec>` | Timeout in seconds (default: 60) |
@@ -159,12 +162,67 @@ npm run lynx -- scan pypi django --ver 2.2 --deep
 # Output as JSON for scripting
 npm run lynx -- scan npm lodash -o json
 
+# ASCII dependency tree with fix suggestions
+npm run lynx -- scan npm express -o tree
+
+# SARIF output for GitHub Security tab
+npm run lynx -- scan npm axios -o sarif > results.sarif.json
+
 # One-line summary for CI/CD
 npm run lynx -- scan npm axios -o summary
 
 # Scan via remote server
 npm run lynx -- scan npm express --server http://localhost:8080
 ```
+
+### File Scanning
+
+Scan manifest files directly without specifying ecosystem:
+
+```bash
+# Python
+npm run lynx -- file requirements.txt -o tree
+
+# Node.js
+npm run lynx -- file package.json -o tree
+
+# Go
+npm run lynx -- file go.mod -o tree
+
+# Ruby
+npm run lynx -- file Gemfile -o tree
+
+# Maven
+npm run lynx -- file pom.xml -o tree
+```
+
+**Supported files:** `requirements.txt`, `package.json`, `go.mod`, `Gemfile`, `pom.xml`
+
+### Tree Output
+
+The `-o tree` format shows an ASCII dependency tree with vulnerability indicators:
+
+```
+🐆 The Weakest Lynx - Dependency Tree
+════════════════════════════════════════════════════════════
+package.json@file | Score: 98/100
+
+📦 package.json@file
+├── ○ express@4.18.2 (2 vulns)
+├── ✓ chalk@5.6.2
+├── ✓ commander@14.0.2
+└── ✓ vite@7.2.7
+
+────────────────────────────────────────────────────────────
+⚠ 30 dependencies, 2 vulnerabilities
+
+📋 Suggested Fixes:
+
+  → express: 4.18.2 → 4.20.0
+    Risk: low | Fixes: 2 vulns
+```
+
+**Icons:** ✓ Clean | ○ Low | ● Medium | ⚠ High | ✗ Critical
 
 ### Exit Codes
 

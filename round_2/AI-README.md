@@ -403,9 +403,10 @@ npx tsc --noEmit
 
 ## 📊 Code Stats
 
-- **Total Lines**: ~3,260
-- **Frontend**: ~1,700 lines (14 files)
-- **Backend**: ~1,500 lines (14 files)
+- **Total Lines**: ~6,500
+- **Frontend**: ~2,850 lines (20 files)
+- **Backend**: ~2,525 lines (21 files)
+- **CLI**: ~1,118 lines (7 files)
 - **Ecosystems**: 5 (PyPI, npm, Maven, Go, RubyGems)
 
 ---

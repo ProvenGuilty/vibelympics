@@ -139,19 +139,19 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
   scanProgress.set(scanId, progress);
   
   const addLog = (msg: string) => {
-    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-    progress.log.push(`[${timestamp}] ${msg}`);
+    progress.log.push(msg);
     logger.info({ scanId, msg }, 'Scan progress');
   };
   
-  addLog(`Starting manifest scan: ${manifest.fileName} (${total} packages)`);
+  addLog(`🔍 Scanning ${manifest.fileName} (${total} packages)`);
+  addLog('');
   
   // Scan each dependency as a full package (with its transitive deps)
   for (let i = 0; i < manifest.dependencies.length; i++) {
     const dep = manifest.dependencies[i];
+    const idx = `[${String(i + 1).padStart(2)}/${total}]`;
     progress.current = i + 1;
     progress.currentPackage = dep.name;
-    addLog(`[${i + 1}/${total}] Scanning ${dep.name}@${dep.version || 'latest'}...`);
     
     try {
       // Use the full scanPackage function for deep scanning
@@ -163,7 +163,25 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
       
       const vulnCount = result.vulnerabilities?.length || 0;
       const depCount = result.dependencies?.length || 0;
-      addLog(`[${i + 1}/${total}] ✓ ${dep.name}: ${depCount} deps, ${vulnCount} vulns, score ${result.securityScore}`);
+      const version = result.version || dep.version || 'latest';
+      const pkgName = `${dep.name}@${version}`;
+      const dots = '.'.repeat(Math.max(2, 40 - pkgName.length));
+      
+      // Build compact status line
+      let status = '';
+      if (vulnCount === 0) {
+        status = `✓ ${depCount} deps`;
+      } else {
+        const summary = result.summary || {};
+        const parts = [];
+        if (summary.critical > 0) parts.push(`${summary.critical}C`);
+        if (summary.high > 0) parts.push(`${summary.high}H`);
+        if (summary.medium > 0) parts.push(`${summary.medium}M`);
+        if (summary.low > 0) parts.push(`${summary.low}L`);
+        status = `⚠ ${depCount} deps │ ${vulnCount} vulns (${parts.join(' ')})`;
+      }
+      
+      addLog(`${idx} ${pkgName} ${dots} ${status}`);
       
       // Store individual package scan
       const pkgScanId = `${scanId}-${dep.name}`;
@@ -196,7 +214,9 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
         });
       }
     } catch (error: any) {
-      addLog(`[${i + 1}/${total}] ✗ ${dep.name}: ${error.message}`);
+      const pkgName = `${dep.name}@${dep.version || 'latest'}`;
+      const dots = '.'.repeat(Math.max(2, 40 - pkgName.length));
+      addLog(`${idx} ${pkgName} ${dots} ✗ error: ${error.message}`);
       logger.error({ error, package: dep.name }, 'Failed to scan package from manifest');
       packageScans.push({
         id: `${scanId}-${dep.name}`,
@@ -210,7 +230,14 @@ async function scanManifestDependencies(scanId: string, manifest: ReturnType<typ
     }
   }
   
-  addLog(`Scan complete: ${allVulnerabilities.length} total vulnerabilities found`);
+  // Summary line
+  addLog('');
+  addLog('─'.repeat(60));
+  const vulnPkgs = packageScans.filter(p => p.summary?.total > 0).length;
+  const cleanPkgs = packageScans.filter(p => !p.error && p.summary?.total === 0).length;
+  const errorPkgs = packageScans.filter(p => p.error).length;
+  addLog(`✓ ${cleanPkgs} clean  ⚠ ${vulnPkgs} vulnerable  ${errorPkgs > 0 ? `✗ ${errorPkgs} errors` : ''}`);
+  addLog(`${allVulnerabilities.length} total vulnerabilities across ${allDependencies.length} dependencies`);
   
   // Calculate aggregate summary
   const summary = {

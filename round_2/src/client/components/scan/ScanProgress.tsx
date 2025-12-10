@@ -106,38 +106,31 @@ export default function ScanProgress({ scanId, onComplete }: ScanProgressProps) 
 
       {/* Log Output */}
       <div className="border-t border-slate-700">
-        <div className="px-4 py-2 bg-slate-900/50 border-b border-slate-700 flex items-center gap-2">
-          <span className="text-xs font-mono text-slate-500">STDOUT</span>
-          <span className="flex-1 h-px bg-slate-700"></span>
-        </div>
         <div 
           ref={logRef}
-          className="h-64 overflow-y-auto p-4 font-mono text-xs bg-slate-900/30"
+          className="h-80 overflow-y-auto p-4 font-mono text-sm bg-black/40 leading-relaxed"
+          style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace' }}
         >
-          {progress.log?.map((line, i) => (
-            <div 
-              key={i} 
-              className={`py-0.5 ${
-                line.includes('✓') ? 'text-emerald-400' :
-                line.includes('✗') ? 'text-red-400' :
-                line.includes('Scanning') ? 'text-violet-400' :
-                'text-slate-400'
-              }`}
-            >
-              {line}
-            </div>
-          ))}
+          {progress.log?.map((line, i) => {
+            // Color based on content
+            let className = 'text-slate-400';
+            if (line.includes('✓') && !line.includes('vuln')) className = 'text-emerald-400';
+            else if (line.includes('⚠')) className = 'text-amber-400';
+            else if (line.includes('✗')) className = 'text-red-400';
+            else if (line.includes('🔍')) className = 'text-violet-400 font-bold';
+            else if (line.startsWith('─')) className = 'text-slate-600';
+            else if (line.includes('total vulnerabilities')) className = 'text-slate-300';
+            
+            return (
+              <div key={i} className={`whitespace-pre ${className}`}>
+                {line || '\u00A0'}
+              </div>
+            );
+          })}
           {progress.status === 'scanning' && (
-            <div className="py-0.5 text-slate-500 animate-pulse">
-              █
-            </div>
+            <div className="text-violet-400 animate-pulse">▌</div>
           )}
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="px-6 py-3 bg-slate-900/50 border-t border-slate-700 text-xs text-slate-500">
-        💡 Each package is scanned with its full dependency tree for comprehensive vulnerability detection
       </div>
     </div>
   );

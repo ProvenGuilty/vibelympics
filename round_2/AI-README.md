@@ -428,4 +428,53 @@ npx tsc --noEmit
 
 ---
 
-*Last updated: December 2024*
+## 🧪 Test Data
+
+Test manifests with known vulnerable packages are in `test-manifests/`:
+
+```bash
+# npm (41 vulnerabilities expected)
+npm run lynx -- file test-manifests/package.json -o tree
+
+# PyPI
+npm run lynx -- file test-manifests/requirements.txt -o tree
+```
+
+---
+
+## 📝 Current State Summary (for AI assistants)
+
+### What's Complete
+- Full CLI with scan, file, health, server commands
+- Web UI with package scan, manifest upload, version comparison
+- Real-time scan progress with SSE streaming
+- 5 ecosystem resolvers (npm, PyPI, Maven, Go, RubyGems)
+- 5 manifest parsers (package.json, requirements.txt, go.mod, Gemfile, pom.xml)
+- Export to JSON, Markdown, SARIF
+- Version diff (side-by-side comparison)
+- Skeleton loading states, contextual error handling
+- Docker with Chainguard base (optimized, CVE-free)
+
+### Architecture
+- **Backend**: Express.js + TypeScript, in-memory scan storage
+- **Frontend**: React + Vite + Tailwind CSS
+- **Vulnerability Data**: OSV.dev API (no API key required)
+- **No Database**: Scans stored in memory with TTL cleanup
+
+### Key Files to Know
+- `src/server/routes/scan.ts` - Main scan logic, progress tracking, SSE
+- `src/server/services/scanner/index.ts` - Orchestrates ecosystem scanners
+- `src/client/App.tsx` - Main app state (view, scanId, scanning)
+- `src/client/components/results/ResultsView.tsx` - Single package results
+- `src/client/components/results/ManifestResultsView.tsx` - Manifest results with tabs
+- `src/cli/index.ts` - CLI entry point
+
+### What's NOT Done (out of scope)
+- Container/image scanning (Grype/Syft)
+- GitHub OAuth / PR creation
+- Persistent database
+- User accounts
+
+---
+
+*Last updated: December 10, 2024*

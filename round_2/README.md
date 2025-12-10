@@ -61,6 +61,23 @@ npm run lynx -- --help
 npm run lynx -- scan --help
 ```
 
+### Quick Test with Sample Files
+
+We include test manifests with known vulnerable packages in `test-manifests/`:
+
+```bash
+# Test npm manifest (41 vulnerabilities)
+npm run lynx -- file test-manifests/package.json -o tree
+
+# Test Python manifest
+npm run lynx -- file test-manifests/requirements.txt -o tree
+
+# Export as SARIF for GitHub
+npm run lynx -- file test-manifests/package.json -o sarif > report.sarif
+```
+
+Or upload them via the Web UI for the full experience with real-time progress.
+
 ---
 
 ## 📖 What Does It Do?

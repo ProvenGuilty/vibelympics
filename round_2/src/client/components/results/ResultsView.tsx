@@ -170,13 +170,15 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
           </div>
         </div>
 
-        {/* Version Selector */}
-        <VersionSelector 
-          packageName={scan.target}
-          currentVersion={scan.version}
-          ecosystem={scan.ecosystem}
-          onVersionChange={handleVersionChange}
-        />
+        {/* Version Selector - only show for package scans, not file scans */}
+        {scan.version !== 'file' && (
+          <VersionSelector 
+            packageName={scan.target}
+            currentVersion={scan.version}
+            ecosystem={scan.ecosystem}
+            onVersionChange={handleVersionChange}
+          />
+        )}
       </div>
 
       {/* Rescanning Overlay */}

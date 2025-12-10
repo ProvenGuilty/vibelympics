@@ -32,10 +32,11 @@ FROM cgr.dev/chainguard/node:latest AS production
 WORKDIR /app
 
 # Copy only production dependencies and built assets
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/certs ./certs
+# Use --chown to ensure non-root user can read all files
+COPY --from=builder --chown=node:node /app/package*.json ./
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/certs ./certs
 
 # Set environment variables
 ENV NODE_ENV=production

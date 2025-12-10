@@ -7,17 +7,14 @@
     "lynx": "./dist/cli/index.js"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "tsx watch src/server/index.ts",
-    "dev:client": "vite",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "build:cli": "tsc -p tsconfig.cli.json",
     "start": "node dist/server/index.js",
-    "cli": "tsx src/cli/index.ts",
-    "lynx": "tsx src/cli/index.ts",
-    "preview": "vite preview"
+    "serve": "npm run build && npm run start",
+    "watch": "tsx watch src/server/index.ts",
+    "lynx": "tsx src/cli/index.ts"
   },
   "dependencies": {
     "@types/d3": "^7.4.3",

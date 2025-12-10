@@ -33,14 +33,13 @@ app.use(helmet({
   },
 }));
 
-// Configure CORS with allowed origins (restrict in production)
+// Configure CORS - allow same-origin and configured origins
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-  'http://localhost:5173',
   'http://localhost:8080',
   'https://localhost:8443',
 ];
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? allowedOrigins : true,
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -65,12 +64,17 @@ app.use('/', healthRoutes);
 app.use('/', scanRoutes);
 app.use('/', configRoutes);
 
-// Serve static frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const clientPath = join(__dirname, '../client');
+// Serve static frontend (always - no separate dev server)
+const clientPath = join(__dirname, '../client');
+if (fs.existsSync(clientPath)) {
   app.use(express.static(clientPath));
   
-  app.get('*', (req, res) => {
+  // SPA fallback - serve index.html for client routes
+  app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+      return next();
+    }
     res.sendFile(join(clientPath, 'index.html'));
   });
 }

@@ -9,6 +9,8 @@
 
 ![The Weakest Lynx Screenshot](./assets/the-weakest-lynx.png)
 
+> 🎮 **Easter Egg Challenge:** Can you figure out how to get into **31337 M0D3**?! 👾
+
 ---
 
 ## 🚀 Quick Start

@@ -19,6 +19,7 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rescanning, setRescanning] = useState(false);
+  const [scanningVersion, setScanningVersion] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
   const [selectedDep, setSelectedDep] = useState<any>(null);
 
@@ -26,6 +27,7 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
     if (!scan) return;
     
     setRescanning(true);
+    setScanningVersion(newVersion);
     try {
       // Start a new scan with the selected version
       const response = await fetch('/api/scan', {
@@ -52,9 +54,11 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
           // The scan data IS the result when completed
           setScan(scanData);
           setRescanning(false);
+          setScanningVersion(null);
         } else if (scanData.status === 'error') {
           setError(scanData.error || 'Scan failed');
           setRescanning(false);
+          setScanningVersion(null);
         } else {
           setTimeout(pollScan, 1000);
         }
@@ -177,10 +181,10 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
         </div>
 
         {/* Version Selector - only show for package scans, not file scans */}
-        {scan.version !== 'file' && (
+        {scan.version !== 'file' && scan.version !== 'manifest' && (
           <VersionSelector 
             packageName={scan.target}
-            currentVersion={scan.version}
+            currentVersion={scanningVersion || scan.version}
             ecosystem={scan.ecosystem}
             onVersionChange={handleVersionChange}
           />
@@ -191,10 +195,7 @@ export default function ResultsView({ scanId, onBack }: ResultsViewProps) {
       {rescanning && (
         <div className="bg-violet-50 dark:bg-violet-900/20 border-2 border-violet-300 dark:border-violet-700 rounded-lg p-6 text-center">
           <div className="text-4xl mb-3 animate-spin">🔄</div>
-          <div className="text-lg font-bold">Scanning new version...</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-            Analyzing {scan.target}@{scan.version}
-          </div>
+          <div className="text-lg font-bold">Scanning {scan.target}@{scanningVersion}...</div>
         </div>
       )}
 

@@ -161,8 +161,8 @@ export default function ScanForm({ onScanStart }: ScanFormProps) {
       }
 
       const data = await response.json();
-      // Package scans complete quickly - go straight to results
-      onScanStart(data.id, false);
+      // Show progress for all scans
+      onScanStart(data.id, true);
     } catch (err: any) {
       setError(err.message || 'Failed to start scan');
       setLoading(false);

@@ -35,8 +35,24 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
   const [selectedDep, setSelectedDep] = useState<any>(null);
   const [rescanning, setRescanning] = useState(false);
+  const [scanningVersion, setScanningVersion] = useState<string | null>(null);
 
   const packageScans: PackageScan[] = scan.packageScans || [];
+
+  // Sort packages by vulnerability count (highest first), then by severity
+  const sortedPackages = [...packageScans].sort((a, b) => {
+    const aTotal = a.summary?.total || 0;
+    const bTotal = b.summary?.total || 0;
+    if (bTotal !== aTotal) return bTotal - aTotal;
+    // Secondary sort by critical count
+    const aCrit = a.summary?.critical || 0;
+    const bCrit = b.summary?.critical || 0;
+    if (bCrit !== aCrit) return bCrit - aCrit;
+    // Then by high
+    const aHigh = a.summary?.high || 0;
+    const bHigh = b.summary?.high || 0;
+    return bHigh - aHigh;
+  });
 
   // Load individual package scan when selected
   useEffect(() => {
@@ -67,6 +83,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
     if (!packageScan) return;
     
     setRescanning(true);
+    setScanningVersion(newVersion);
     try {
       const response = await fetch('/api/scan', {
         method: 'POST',
@@ -90,8 +107,10 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
         if (scanData.status === 'completed') {
           setPackageScan(scanData);
           setRescanning(false);
+          setScanningVersion(null);
         } else if (scanData.status === 'error') {
           setRescanning(false);
+          setScanningVersion(null);
         } else {
           setTimeout(pollScan, 1000);
         }
@@ -155,7 +174,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
           >
             📊 Overview
           </button>
-          {[...packageScans].sort((a, b) => (b.summary?.total || 0) - (a.summary?.total || 0)).map((pkg) => (
+          {sortedPackages.map((pkg) => (
             <button
               key={pkg.id}
               onClick={() => setSelectedPackage(pkg.id)}
@@ -191,7 +210,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
           <div>
             <h3 className="text-xl font-bold mb-4">Packages ({packageScans.length})</h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...packageScans].sort((a, b) => (b.summary?.total || 0) - (a.summary?.total || 0)).map((pkg) => (
+              {sortedPackages.map((pkg) => (
                 <button
                   key={pkg.id}
                   onClick={() => setSelectedPackage(pkg.id)}
@@ -235,7 +254,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
           {/* Version Selector */}
           <VersionSelector
             packageName={packageScan.target}
-            currentVersion={packageScan.version}
+            currentVersion={scanningVersion || packageScan.version}
             ecosystem={packageScan.ecosystem}
             onVersionChange={handleVersionChange}
           />
@@ -243,7 +262,7 @@ export default function ManifestResultsView({ scan, onBack }: ManifestResultsVie
           {rescanning ? (
             <div className="bg-violet-900/20 border-2 border-violet-700 rounded-lg p-6 text-center">
               <div className="text-4xl mb-3 animate-spin">🔄</div>
-              <div className="text-lg font-bold">Scanning new version...</div>
+              <div className="text-lg font-bold">Scanning {packageScan.target}@{scanningVersion}...</div>
             </div>
           ) : (
             <>

@@ -48,9 +48,21 @@ router.post('/api/scan', async (req, res) => {
     }
     
     const scanId = `scan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const pkgName = request.package || 'unknown';
+    const version = request.version || 'latest';
     
-    // Start scan asynchronously
-    const scanPromise = scanPackage(request);
+    // Initialize progress tracking for single package scan
+    const progress = { 
+      current: 0, 
+      total: 1, 
+      currentPackage: pkgName, 
+      log: [
+        `🔍 Scanning ${pkgName}@${version}`,
+        '',
+        `[ 1/1 ] ${pkgName}@${version} .............. scanning`,
+      ] 
+    };
+    scanProgress.set(scanId, progress);
     
     // Store initial status with timestamp for TTL
     scans.set(scanId, {
@@ -64,10 +76,37 @@ router.post('/api/scan', async (req, res) => {
     res.json({ id: scanId, status: 'scanning' });
     
     // Complete scan in background
-    scanPromise.then(result => {
+    scanPackage(request).then(result => {
+      const vulnCount = result.vulnerabilities?.length || 0;
+      const depCount = result.dependencies?.length || 0;
+      
+      // Update progress log with results
+      let status = '';
+      if (vulnCount === 0) {
+        status = `✓ ${depCount} deps`;
+      } else {
+        const summary = result.summary || {};
+        const parts = [];
+        if (summary.critical > 0) parts.push(`${summary.critical}C`);
+        if (summary.high > 0) parts.push(`${summary.high}H`);
+        if (summary.medium > 0) parts.push(`${summary.medium}M`);
+        if (summary.low > 0) parts.push(`${summary.low}L`);
+        status = `⚠ ${depCount} deps │ ${vulnCount} vulns (${parts.join(' ')})`;
+      }
+      
+      progress.current = 1;
+      progress.log[2] = `[ 1/1 ] ${pkgName}@${result.version || version} .............. ${status}`;
+      progress.log.push('');
+      progress.log.push('─'.repeat(50));
+      progress.log.push(vulnCount === 0 
+        ? `✓ No vulnerabilities found` 
+        : `⚠ ${vulnCount} vulnerabilities in ${depCount} dependencies`);
+      
       scans.set(scanId, { ...result, id: scanId, status: 'completed' });
     }).catch(error => {
       logger.error({ error, scanId }, 'Scan failed');
+      progress.log[2] = `[ 1/1 ] ${pkgName}@${version} .............. ✗ error`;
+      progress.log.push(`Error: ${error.message}`);
       scans.set(scanId, {
         id: scanId,
         status: 'error',

@@ -227,28 +227,53 @@ npm run lynx -- file pom.xml -o tree
 
 **Supported files:** `requirements.txt`, `package.json`, `go.mod`, `Gemfile`, `pom.xml`
 
-### Tree Output
+### Example Output
 
-The `-o tree` format shows an ASCII dependency tree with vulnerability indicators:
+Scan the included test manifest with known vulnerabilities:
+
+```bash
+npm run lynx -- file test-manifests/package.json -o tree
+```
 
 ```
 🐆 The Weakest Lynx - Dependency Tree
 ════════════════════════════════════════════════════════════
-package.json@file | Score: 98/100
+package.json@file | Score: 47/100
 
 📦 package.json@file
-├── ○ express@4.18.2 (2 vulns)
-├── ✓ chalk@5.6.2
-├── ✓ commander@14.0.2
-└── ✓ vite@7.2.7
+├── ● handlebars@4.0.0 (10 vulns)
+├── ○ axios@0.18.0 (6 vulns)
+├── ○ marked@0.3.5 (6 vulns)
+├── ○ jquery@2.2.4 (4 vulns)
+├── ○ lodash@4.17.11 (4 vulns)
+├── ○ moment@2.19.2 (3 vulns)
+├── ○ express@4.16.0 (2 vulns)
+├── ○ minimist@1.2.0 (2 vulns)
+├── ○ node-fetch@2.6.0 (2 vulns)
+└── ○ serialize-javascript@1.5.0 (2 vulns)
 
 ────────────────────────────────────────────────────────────
-⚠ 30 dependencies, 2 vulnerabilities
+⚠ 10 dependencies, 41 vulnerabilities
 
 📋 Suggested Fixes:
 
-  → express: 4.18.2 → 4.20.0
+  → lodash: 4.17.11 → 4.17.21
+    Risk: low | Fixes: 4 vulns
+
+  → express: 4.16.0 → 4.20.0
     Risk: low | Fixes: 2 vulns
+
+  → axios: 0.18.0 → 1.8.2 ⚠ BREAKING
+    Risk: high | Fixes: 6 vulns
+
+  → handlebars: 4.0.0 → 4.7.7
+    Risk: low | Fixes: 10 vulns
+
+  → marked: 0.3.5 → 4.0.10 ⚠ BREAKING
+    Risk: high | Fixes: 6 vulns
+
+  → jquery: 2.2.4 → 3.5.0 ⚠ BREAKING
+    Risk: high | Fixes: 4 vulns
 ```
 
 **Icons:** ✓ Clean | ○ Low | ● Medium | ⚠ High | ✗ Critical

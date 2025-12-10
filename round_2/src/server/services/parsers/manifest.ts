@@ -259,13 +259,36 @@ function parseGemfile(content: string): ParsedDependency[] {
 function parsePomXml(content: string): ParsedDependency[] {
   const deps: ParsedDependency[] = [];
   
+  // Extract properties for variable resolution
+  const properties: Record<string, string> = {};
+  const propsMatch = content.match(/<properties>([\s\S]*?)<\/properties>/);
+  if (propsMatch) {
+    const propRegex = /<([^>]+)>([^<]+)<\/\1>/g;
+    let propMatch;
+    while ((propMatch = propRegex.exec(propsMatch[1])) !== null) {
+      properties[propMatch[1]] = propMatch[2];
+    }
+  }
+  
   // Simple regex to extract dependencies
-  // This is basic and won't handle all cases, but works for simple pom.xml files
   const depRegex = /<dependency>\s*<groupId>([^<]+)<\/groupId>\s*<artifactId>([^<]+)<\/artifactId>(?:\s*<version>([^<]+)<\/version>)?/g;
   
   let match;
   while ((match = depRegex.exec(content)) !== null) {
-    const [, groupId, artifactId, version] = match;
+    const [, groupId, artifactId, rawVersion] = match;
+    
+    // Resolve version variables like ${spring.version}
+    let version: string | undefined = rawVersion;
+    if (version && version.startsWith('${') && version.endsWith('}')) {
+      const varName = version.slice(2, -1);
+      version = properties[varName];
+    }
+    
+    // Skip if version is still a variable (unresolved)
+    if (version && version.includes('${')) {
+      version = undefined;
+    }
+    
     deps.push({
       name: `${groupId}:${artifactId}`,
       version: version || undefined,

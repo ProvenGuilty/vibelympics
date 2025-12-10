@@ -70,11 +70,11 @@ function AppContent() {
                     ? 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-cyan-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]' 
                     : 'text-slate-900 dark:text-white'
                 }`}>
-                  The Weakest Lynx
+                  {isCyberpunk ? '7h3 W34k3s7 Lynx' : 'The Weakest Lynx'}
                 </h1>
                 {isCyberpunk && (
                   <span className="text-xs text-cyan-400 animate-pulse font-mono">
-                    [CYBER MODE]
+                    [31337 M0D3]
                   </span>
                 )}
               </div>

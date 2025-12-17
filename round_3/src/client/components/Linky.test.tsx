@@ -25,19 +25,19 @@ describe('Linky', () => {
     expect(container?.children.length).toBeGreaterThan(1);
   });
 
-  it('should have double-click hint in title', () => {
+  it('should have click hint in title', () => {
     renderWithTheme(<Linky />);
     
-    const hatElement = screen.getByTitle(/double-click/i);
+    const hatElement = screen.getByTitle(/click for a surprise/i);
     expect(hatElement).toBeInTheDocument();
   });
 
-  it('should toggle theme on double-click', () => {
+  it('should toggle theme on single click', () => {
     renderWithTheme(<Linky />);
     
-    const hatElement = screen.getByTitle(/double-click/i);
+    const hatElement = screen.getByTitle(/click for a surprise/i);
     
-    fireEvent.doubleClick(hatElement);
+    fireEvent.click(hatElement);
     
     expect(hatElement).toBeInTheDocument();
   });

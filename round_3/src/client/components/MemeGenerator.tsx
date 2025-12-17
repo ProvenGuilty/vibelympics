@@ -9,7 +9,8 @@ interface MemeGeneratorProps {
 }
 
 type MemeMode = 'ai' | 'template';
-type MemeStyle = 'general' | 'security';
+type MemeStyle = 'general' | 'security' | 'sarcastic' | 'roast' | 'self-deprecating';
+type TopicsCategory = 'security' | 'general' | 'gaming' | 'pets' | 'entertainment';
 
 const TEMPLATES = [
   { id: 'drake', name: 'Drake Approves', emoji: '🎵' },
@@ -20,7 +21,7 @@ const TEMPLATES = [
   { id: 'twobuttons', name: 'Two Buttons', emoji: '😰' },
 ];
 
-const QUICK_TOPICS = [
+const SECURITY_QUICK_TOPICS = [
   { label: '🔐 CVEs in prod', topic: 'discovering CVEs in production' },
   { label: '🐳 Docker images', topic: 'Docker image sizes and layers' },
   { label: '☸️ K8s complexity', topic: 'Kubernetes YAML complexity' },
@@ -29,7 +30,79 @@ const QUICK_TOPICS = [
   { label: '💀 Legacy code', topic: 'maintaining legacy code' },
   { label: '🤖 AI coding', topic: 'AI writing code for you' },
   { label: '📝 YAML indent', topic: 'YAML indentation errors' },
+  { label: '🌊 DDoS attacks', topic: 'surviving DDoS attacks on your infrastructure' },
+  { label: '☁️ Cloud bills', topic: 'unexpected cloud computing bills' },
+  { label: '🔗 Chain of thought', topic: 'AI agents breaking their chain of thought mid-task' },
+  { label: '🛡️ Guarded AI specs', topic: 'when your AI agent needs a Chainguard for its Anthropic thoughts and Tessl specs' },
 ];
+
+const GENERAL_QUICK_TOPICS = [
+  { label: '☕ Monday meetings', topic: 'surviving Monday morning meetings' },
+  { label: '📧 Reply all', topic: 'accidental reply-all email disasters' },
+  { label: '🍕 Free pizza', topic: 'free pizza in the break room' },
+  { label: '📱 Phone dying', topic: 'phone dying at 1% battery' },
+  { label: '🛋️ WFH life', topic: 'working from home distractions' },
+  { label: '📅 Calendar Tetris', topic: 'back-to-back meetings all day' },
+  { label: '🔔 Notifications', topic: 'notification overload from every app' },
+  { label: '😴 Sleep schedule', topic: 'ruined sleep schedules' },
+  { label: '🎧 Muted mic', topic: 'talking on mute during video calls' },
+  { label: '🔋 Low battery anxiety', topic: 'laptop dying during important work' },
+  { label: '📦 Online shopping', topic: 'waiting for package delivery' },
+  { label: '🤳 Selfie attempts', topic: 'taking 47 selfies to get one good one' },
+];
+
+const GAMING_QUICK_TOPICS = [
+  { label: '🎮 Rage quit', topic: 'rage quitting a video game' },
+  { label: '🌙 One more game', topic: 'saying "one more game" at 3am' },
+  { label: '💸 Pay to win', topic: 'pay-to-win mechanics in games' },
+  { label: '📶 Lag spike', topic: 'lag spikes at the worst possible moment' },
+  { label: '🗣️ Backseat gaming', topic: 'backseat gamers telling you what to do' },
+  { label: '🎒 Inventory full', topic: 'inventory management in RPGs' },
+  { label: '💀 Git gud', topic: 'dying to the same boss 50 times' },
+  { label: '🔊 Hot mic', topic: 'embarrassing hot mic moments in voice chat' },
+  { label: '⏸️ Cant pause online', topic: 'explaining you cant pause an online game' },
+  { label: '🏆 Achievement hunting', topic: 'grinding for achievements nobody cares about' },
+  { label: '🎯 Skill issue', topic: 'blaming everything except your own skill' },
+  { label: '📱 Mobile gaming', topic: 'mobile game ads vs actual gameplay' },
+];
+
+const PETS_QUICK_TOPICS = [
+  { label: '🐱 Expensive toy ignored', topic: 'cat ignoring expensive toy for the box' },
+  { label: '🐕 Ate homework', topic: 'dog actually eating homework' },
+  { label: '🌙 3am zoomies', topic: 'pet zoomies at 3am' },
+  { label: '🏥 Vet visit drama', topic: 'dramatic pets at the vet' },
+  { label: '👀 Judgmental pet', topic: 'pet silently judging your life choices' },
+  { label: '🛋️ Spot stolen', topic: 'pet stealing your spot on the couch' },
+  { label: '🍽️ Empty bowl lies', topic: 'pet acting like they havent been fed' },
+  { label: '📦 Box obsession', topic: 'cat obsessed with cardboard boxes' },
+  { label: '🚿 Bath time chaos', topic: 'giving a pet a bath' },
+  { label: '🎾 Fetch refusal', topic: 'dog refusing to return the ball' },
+  { label: '⌨️ Keyboard cat', topic: 'cat walking on keyboard during work' },
+  { label: '🐾 Muddy paws', topic: 'pet with muddy paws on clean floors' },
+];
+
+const ENTERTAINMENT_QUICK_TOPICS = [
+  { label: '🚨 Spoiler alert', topic: 'getting spoiled on a show you were about to watch' },
+  { label: '📺 One more episode', topic: 'binge watching just one more episode' },
+  { label: '😫 Streaming fatigue', topic: 'too many streaming services to subscribe to' },
+  { label: '🔄 Unnecessary reboot', topic: 'reboots and remakes nobody asked for' },
+  { label: '📖 Book was better', topic: 'the book was better than the movie' },
+  { label: '🍿 Trailer spoilers', topic: 'trailers that spoil the entire movie' },
+  { label: '⏭️ Skip intro debate', topic: 'skipping vs watching show intros' },
+  { label: '😭 Character death', topic: 'favorite character getting killed off' },
+  { label: '🗓️ Release delays', topic: 'movies and shows getting delayed' },
+  { label: '🎬 Post credits', topic: 'waiting through credits for a 5 second scene' },
+  { label: '📱 Second screen', topic: 'scrolling phone while watching a movie' },
+  { label: '🤔 Plot holes', topic: 'obvious plot holes in movies' },
+];
+
+const QUICK_TOPICS_MAP: Record<TopicsCategory, typeof SECURITY_QUICK_TOPICS> = {
+  security: SECURITY_QUICK_TOPICS,
+  general: GENERAL_QUICK_TOPICS,
+  gaming: GAMING_QUICK_TOPICS,
+  pets: PETS_QUICK_TOPICS,
+  entertainment: ENTERTAINMENT_QUICK_TOPICS,
+};
 
 export default function MemeGenerator({ 
   onMemeGenerated, 
@@ -39,6 +112,7 @@ export default function MemeGenerator({
   const { isCyberpunk } = useTheme();
   const [mode, setMode] = useState<MemeMode>('ai');
   const [style, setStyle] = useState<MemeStyle>('security');
+  const [topicsCategory, setTopicsCategory] = useState<TopicsCategory>('security');
   const [topic, setTopic] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('drake');
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +130,7 @@ export default function MemeGenerator({
       const endpoint = mode === 'ai' ? '/api/meme/generate' : '/api/meme/template';
       const body = mode === 'ai' 
         ? { topic, style }
-        : { template: selectedTemplate, topic };
+        : { template: selectedTemplate, topic, style };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -78,6 +152,7 @@ export default function MemeGenerator({
         template: meme.templateName,
         templateId: meme.templateId,
         captions: meme.captions,
+        style,
         createdAt: new Date()
       });
       
@@ -164,16 +239,15 @@ export default function MemeGenerator({
         </div>
       )}
 
-      {/* Style Selection (if AI mode) */}
-      {mode === 'ai' && (
-        <div className="mb-6">
-          <label className={`block text-sm font-medium mb-2 ${isCyberpunk ? 'text-cyan-300' : 'text-slate-300'}`}>
-            Humor Style
-          </label>
-          <div className="flex gap-2">
+      {/* Humor Style Selection */}
+      <div className="mb-6">
+        <label className={`block text-sm font-medium mb-2 ${isCyberpunk ? 'text-cyan-300' : 'text-slate-300'}`}>
+          Humor Style
+        </label>
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setStyle('security')}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm transition-all ${
+              className={`py-2 px-3 rounded-lg text-sm transition-all ${
                 style === 'security'
                   ? isCyberpunk
                     ? 'bg-cyan-500/30 border border-cyan-400 text-cyan-300'
@@ -185,7 +259,7 @@ export default function MemeGenerator({
             </button>
             <button
               onClick={() => setStyle('general')}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm transition-all ${
+              className={`py-2 px-3 rounded-lg text-sm transition-all ${
                 style === 'general'
                   ? isCyberpunk
                     ? 'bg-cyan-500/30 border border-cyan-400 text-cyan-300'
@@ -195,17 +269,91 @@ export default function MemeGenerator({
             >
               😂 General
             </button>
+            <button
+              onClick={() => setStyle('sarcastic')}
+              className={`py-2 px-3 rounded-lg text-sm transition-all ${
+                style === 'sarcastic'
+                  ? isCyberpunk
+                    ? 'bg-cyan-500/30 border border-cyan-400 text-cyan-300'
+                    : 'bg-violet-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              🎭 Sarcastic
+            </button>
+            <button
+              onClick={() => setStyle('roast')}
+              className={`py-2 px-3 rounded-lg text-sm transition-all ${
+                style === 'roast'
+                  ? isCyberpunk
+                    ? 'bg-cyan-500/30 border border-cyan-400 text-cyan-300'
+                    : 'bg-violet-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              🔥 Roast
+            </button>
+            <button
+              onClick={() => setStyle('self-deprecating')}
+              className={`py-2 px-3 rounded-lg text-sm transition-all ${
+                style === 'self-deprecating'
+                  ? isCyberpunk
+                    ? 'bg-cyan-500/30 border border-cyan-400 text-cyan-300'
+                    : 'bg-violet-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              😅 Self-deprecating
+            </button>
           </div>
         </div>
-      )}
 
       {/* Quick Topics */}
       <div className="mb-4">
-        <label className={`block text-sm font-medium mb-2 ${isCyberpunk ? 'text-cyan-300' : 'text-slate-300'}`}>
-          Quick Topics
-        </label>
+        <div className="flex items-center gap-2 mb-2">
+          <label className={`text-sm font-medium ${isCyberpunk ? 'text-cyan-300' : 'text-slate-300'}`}>
+            Quick Topics
+          </label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setTopicsCategory('security')}
+              className={`text-lg transition-all hover:scale-110 ${topicsCategory === 'security' ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+              title="Security/DevOps topics"
+            >
+              🔐
+            </button>
+            <button
+              onClick={() => setTopicsCategory('general')}
+              className={`text-lg transition-all hover:scale-110 ${topicsCategory === 'general' ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+              title="General topics"
+            >
+              😂
+            </button>
+            <button
+              onClick={() => setTopicsCategory('gaming')}
+              className={`text-lg transition-all hover:scale-110 ${topicsCategory === 'gaming' ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+              title="Gaming topics"
+            >
+              🎮
+            </button>
+            <button
+              onClick={() => setTopicsCategory('pets')}
+              className={`text-lg transition-all hover:scale-110 ${topicsCategory === 'pets' ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+              title="Pet topics"
+            >
+              🐾
+            </button>
+            <button
+              onClick={() => setTopicsCategory('entertainment')}
+              className={`text-lg transition-all hover:scale-110 ${topicsCategory === 'entertainment' ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+              title="Movies/TV topics"
+            >
+              🎬
+            </button>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {QUICK_TOPICS.map(qt => (
+          {QUICK_TOPICS_MAP[topicsCategory].map(qt => (
             <button
               key={qt.topic}
               onClick={() => setTopic(qt.topic)}

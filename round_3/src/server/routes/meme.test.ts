@@ -10,7 +10,7 @@ vi.mock('../services/memeService.js', () => ({
   ])
 }));
 
-import memeRoutes from './meme.js';
+import memeRoutes, { clearRateLimits } from './meme.js';
 import { generateAIMeme, generateTemplateMeme, getTemplates } from '../services/memeService.js';
 
 describe('Meme Routes', () => {
@@ -20,6 +20,7 @@ describe('Meme Routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearRateLimits();
   });
 
   describe('GET /api/meme/templates', () => {
@@ -146,10 +147,28 @@ describe('Meme Routes', () => {
         .send({ template: 'drake', topic: 'refactoring' });
       
       expect(response.status).toBe(200);
-      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'refactoring');
+      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'refactoring', 'general');
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('templateId', 'drake');
       expect(response.body).toHaveProperty('createdAt');
+    });
+
+    it('should pass style parameter to generateTemplateMeme', async () => {
+      const mockMeme = {
+        templateId: 'drake',
+        templateUrl: 'https://example.com/drake.jpg',
+        templateName: 'Drake Approves',
+        captions: { 'Bad thing': 'Old code', 'Good thing': 'New code' },
+        type: 'template'
+      };
+      vi.mocked(generateTemplateMeme).mockResolvedValue(mockMeme);
+
+      const response = await request(app)
+        .post('/api/meme/template')
+        .send({ template: 'drake', topic: 'CVEs', style: 'security' });
+      
+      expect(response.status).toBe(200);
+      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'CVEs', 'security');
     });
 
     it('should return 500 on service error', async () => {
@@ -174,11 +193,20 @@ describe('Meme Routes', () => {
         type: 'ai-generated'
       });
 
+      // Make 10 requests to hit the rate limit
+      for (let i = 0; i < 10; i++) {
+        await request(app)
+          .post('/api/meme/generate')
+          .send({ topic: 'test' });
+      }
+
+      // 11th request should be rate limited
       const response = await request(app)
         .post('/api/meme/generate')
         .send({ topic: 'test' });
       
-      expect(response.body).toHaveProperty('error');
+      expect(response.status).toBe(429);
+      expect(response.body).toHaveProperty('error', 'Rate limit exceeded. Try again in a minute.');
     });
   });
 });

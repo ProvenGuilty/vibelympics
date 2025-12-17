@@ -23,6 +23,10 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+export function clearRateLimits(): void {
+  rateLimits.clear();
+}
+
 // Generate AI meme (DALL-E + GPT-4)
 router.post('/generate', async (req: Request, res: Response) => {
   try {
@@ -63,13 +67,13 @@ router.post('/template', async (req: Request, res: Response) => {
       return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
     }
 
-    const { template, topic } = req.body;
+    const { template, topic, style = 'general' } = req.body;
     
     if (!template || !topic) {
       return res.status(400).json({ error: 'Template and topic are required' });
     }
 
-    const meme = await generateTemplateMeme(template, topic);
+    const meme = await generateTemplateMeme(template, topic, style);
     
     res.json({
       id: uuidv4(),

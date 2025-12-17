@@ -75,6 +75,23 @@ export const TEMPLATES = {
   }
 };
 
+// Humor style instructions for GPT captions
+const HUMOR_STYLE_INSTRUCTIONS: Record<string, string> = {
+  security: 'DevOps/security humor, references to CVEs, containers, Kubernetes, CI/CD. Make jokes developers and SREs would appreciate.',
+  general: 'General internet humor, relatable everyday situations, classic meme energy.',
+  sarcastic: 'Dry, ironic humor with deadpan delivery. Use phrases like "Oh great", "Wow, shocking", "Who could have predicted this". Heavy on the eye-roll energy.',
+  roast: 'Playful roasting and calling things out. Be savage but funny, not mean-spirited. Roast the subject like a comedy central roast.',
+  'self-deprecating': 'Self-deprecating humor where the speaker is the butt of the joke. "Me pretending I know what Im doing", "My life choices", relatable failure energy.'
+};
+
+// Image style instructions for DALL-E (only non-general styles modify the image)
+const IMAGE_STYLE_INSTRUCTIONS: Record<string, string> = {
+  security: 'Include visual elements like computer screens, server racks, code, terminals, or tech office settings.',
+  sarcastic: 'Characters should have deadpan, unimpressed, or eye-rolling expressions. Flat affect, raised eyebrows, side-eye looks.',
+  roast: 'Exaggerated shocked or burned expressions, dramatic reactions, someone looking roasted or called out.',
+  'self-deprecating': 'Show a relatable failure moment, someone looking defeated, embarrassed, or in an awkward situation they caused themselves.'
+};
+
 // Security/DevOps themed prompts
 const SECURITY_THEMES = [
   'CVEs in production',
@@ -108,12 +125,12 @@ export async function generateAIMeme(topic: string, style: string = 'general') {
       {
         role: 'system',
         content: `You are a meme caption generator. Create short, punchy, funny meme text.
-        Style: ${style === 'security' ? 'DevOps/security humor, references to CVEs, containers, Kubernetes, CI/CD' : 'general internet humor'}
+        Style: ${HUMOR_STYLE_INSTRUCTIONS[style] || HUMOR_STYLE_INSTRUCTIONS.general}
         Rules:
         - Keep it under 100 characters total
         - Be clever and witty
         - Use internet meme language appropriately
-        - If security themed, make jokes developers and SREs would appreciate
+        - Match the humor style specified above
         - Return JSON with "topText" and "bottomText" fields`
       },
       {
@@ -127,8 +144,10 @@ export async function generateAIMeme(topic: string, style: string = 'general') {
   const captionData = JSON.parse(captionResponse.choices[0].message.content || '{}');
 
   // Generate image with DALL-E 3
+  const imageStyleAddition = IMAGE_STYLE_INSTRUCTIONS[style] || '';
   const imagePrompt = `A funny meme image about ${enhancedTopic}. 
     Style: colorful, exaggerated expressions, meme-worthy, internet humor aesthetic.
+    ${imageStyleAddition}
     Do NOT include any text in the image - just the visual scene.
     Make it suitable for a professional audience but still funny.`;
 
@@ -149,11 +168,18 @@ export async function generateAIMeme(topic: string, style: string = 'general') {
   };
 }
 
-export async function generateTemplateMeme(templateId: string, topic: string) {
+export async function generateTemplateMeme(templateId: string, topic: string, style: string = 'general') {
   const template = TEMPLATES[templateId as keyof typeof TEMPLATES];
   
   if (!template) {
     throw new Error(`Unknown template: ${templateId}`);
+  }
+
+  // Enhance topic for security style
+  let enhancedTopic = topic;
+  if (style === 'security') {
+    const randomTheme = SECURITY_THEMES[Math.floor(Math.random() * SECURITY_THEMES.length)];
+    enhancedTopic = `${topic} (in the context of ${randomTheme})`;
   }
 
   // Generate captions for each text area
@@ -169,6 +195,8 @@ export async function generateTemplateMeme(templateId: string, topic: string) {
         - Just write the controversial opinion/hot take that goes on the sign above "Change my mind"`;
   }
 
+  const styleInstruction = HUMOR_STYLE_INSTRUCTIONS[style] || HUMOR_STYLE_INSTRUCTIONS.general;
+
   const captionResponse = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
@@ -176,6 +204,7 @@ export async function generateTemplateMeme(templateId: string, topic: string) {
         role: 'system',
         content: `You are a meme caption generator for the "${template.name}" meme format.
         This meme has these text areas: ${textAreasDescription}
+        Style: ${styleInstruction}
         
         Rules:
         - Each text should be short (under 50 chars)
@@ -184,7 +213,7 @@ export async function generateTemplateMeme(templateId: string, topic: string) {
       },
       {
         role: 'user',
-        content: `Create meme text about: ${topic}`
+        content: `Create meme text about: ${enhancedTopic}`
       }
     ],
     response_format: { type: 'json_object' }

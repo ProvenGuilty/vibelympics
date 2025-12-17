@@ -15,7 +15,7 @@ export default function Linky() {
     setHat(randomHat);
   }, [isCyberpunk]);
 
-  const handleDoubleClick = () => {
+  const handleClick = () => {
     setShowFlash(true);
     toggleCyberpunk();
     setTimeout(() => setShowFlash(false), 300);
@@ -37,8 +37,8 @@ export default function Linky() {
             ? 'animate-pulse drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]' 
             : 'animate-bounce'
         }`}
-        onDoubleClick={handleDoubleClick}
-        title="Double-click for a surprise..."
+        onClick={handleClick}
+        title="Click for a surprise..."
       >
         {hat}
       </div>

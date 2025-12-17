@@ -12,6 +12,7 @@ export interface GeneratedMeme {
   template?: string;
   templateId?: string;
   captions?: Record<string, string>;
+  style?: string;
   createdAt: Date;
 }
 

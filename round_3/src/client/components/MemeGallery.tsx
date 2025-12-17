@@ -418,9 +418,11 @@ function MemeCard({ meme, cardClass, isCyberpunk, isSelected, onToggleSelect }: 
           </button>
         </div>
         
-        {meme.template && (
+        {(meme.template || meme.style) && (
           <div className={`mt-2 text-xs ${isCyberpunk ? 'text-fuchsia-400' : 'text-slate-400'}`}>
-            Template: {meme.template}
+            {meme.template && <span>{meme.template}</span>}
+            {meme.template && meme.style && <span> · </span>}
+            {meme.style && <span className="capitalize">{meme.style}</span>}
           </div>
         )}
       </div>

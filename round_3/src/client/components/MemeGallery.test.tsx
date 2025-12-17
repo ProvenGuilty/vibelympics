@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import MemeGallery from './MemeGallery';
 import { ThemeProvider } from '../context/ThemeContext';
 import { GeneratedMeme } from '../App';
@@ -227,6 +228,148 @@ describe('MemeGallery', () => {
       renderWithTheme(<MemeGallery memes={[meme]} />);
 
       expect(screen.getByText(/Generated Memes|G4LL3RY/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Selection Functionality', () => {
+    const createTestMemes = (): GeneratedMeme[] => [
+      {
+        id: 'meme-1',
+        imageUrl: 'https://example.com/meme1.jpg',
+        topText: 'Meme 1 Top',
+        bottomText: 'Meme 1 Bottom',
+        createdAt: new Date()
+      },
+      {
+        id: 'meme-2',
+        imageUrl: 'https://example.com/meme2.jpg',
+        topText: 'Meme 2 Top',
+        bottomText: 'Meme 2 Bottom',
+        createdAt: new Date()
+      },
+      {
+        id: 'meme-3',
+        imageUrl: 'https://example.com/meme3.jpg',
+        topText: 'Meme 3 Top',
+        bottomText: 'Meme 3 Bottom',
+        createdAt: new Date()
+      }
+    ];
+
+    it('should show Download button disabled when no memes selected', () => {
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      // The header download button is the first one with exact text "⬇️ Download"
+      const downloadButtons = screen.getAllByRole('button', { name: /⬇️ Download/i });
+      // Header button is the first one that's disabled
+      const headerButton = downloadButtons.find(btn => btn.hasAttribute('disabled'));
+      expect(headerButton).toBeDefined();
+    });
+
+    it('should toggle selection when clicking on a meme card', async () => {
+      const user = userEvent.setup();
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      // Find the first meme card (contains the meme text)
+      const memeCard = screen.getByText('Meme 1 Top').closest('.meme-card');
+      expect(memeCard).not.toBeNull();
+
+      // Click to select
+      await user.click(memeCard!);
+
+      // Download button should now show count
+      expect(screen.getByRole('button', { name: /Download \(1\)/i })).toBeInTheDocument();
+
+      // Click again to deselect
+      await user.click(memeCard!);
+
+      // Download button should be back to disabled state (check for disabled attribute)
+      const downloadButtons = screen.getAllByRole('button', { name: /⬇️ Download/i });
+      const headerButton = downloadButtons.find(btn => btn.hasAttribute('disabled'));
+      expect(headerButton).toBeDefined();
+    });
+
+    it('should select multiple memes', async () => {
+      const user = userEvent.setup();
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      const memeCard1 = screen.getByText('Meme 1 Top').closest('.meme-card');
+      const memeCard2 = screen.getByText('Meme 2 Top').closest('.meme-card');
+
+      await user.click(memeCard1!);
+      await user.click(memeCard2!);
+
+      expect(screen.getByRole('button', { name: /Download \(2\)/i })).toBeInTheDocument();
+    });
+
+    it('should have Select All button that selects all memes', async () => {
+      const user = userEvent.setup();
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      const selectAllButton = screen.getByRole('button', { name: /Select All/i });
+      await user.click(selectAllButton);
+
+      // Should show all 3 selected
+      expect(screen.getByRole('button', { name: /Download \(3\)/i })).toBeInTheDocument();
+
+      // Button should now say "Clear All"
+      expect(screen.getByRole('button', { name: /Clear All/i })).toBeInTheDocument();
+    });
+
+    it('should have Clear All button that deselects all memes', async () => {
+      const user = userEvent.setup();
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      // First select all
+      await user.click(screen.getByRole('button', { name: /Select All/i }));
+
+      // Then clear all
+      await user.click(screen.getByRole('button', { name: /Clear All/i }));
+
+      // Download button should be disabled again
+      const downloadButtons = screen.getAllByRole('button', { name: /⬇️ Download/i });
+      const headerButton = downloadButtons.find(btn => btn.hasAttribute('disabled'));
+      expect(headerButton).toBeDefined();
+    });
+
+    it('should show selection indicator (checkmark) on selected cards', async () => {
+      const user = userEvent.setup();
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      const memeCard = screen.getByText('Meme 1 Top').closest('.meme-card');
+      await user.click(memeCard!);
+
+      // Should have a checkmark visible
+      expect(screen.getByText('✓')).toBeInTheDocument();
+    });
+
+    it('should apply ring highlight to selected cards', async () => {
+      const user = userEvent.setup();
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      const memeCard = screen.getByText('Meme 1 Top').closest('.meme-card');
+      await user.click(memeCard!);
+
+      // Card should have ring-4 class for selection highlight
+      expect(memeCard?.className).toContain('ring-4');
+    });
+
+    it('should not toggle selection when clicking Download button on card', async () => {
+      const user = userEvent.setup();
+      renderWithTheme(<MemeGallery memes={createTestMemes()} />);
+
+      // First select a meme
+      const memeCard = screen.getByText('Meme 1 Top').closest('.meme-card');
+      await user.click(memeCard!);
+
+      expect(screen.getByRole('button', { name: /Download \(1\)/i })).toBeInTheDocument();
+
+      // Click the individual download button on the card (not the header one with count)
+      const cardDownloadButtons = screen.getAllByRole('button', { name: /^⬇️ Download$/i });
+      await user.click(cardDownloadButtons[0]);
+
+      // Selection should still be 1 (not toggled)
+      expect(screen.getByRole('button', { name: /Download \(1\)/i })).toBeInTheDocument();
     });
   });
 });

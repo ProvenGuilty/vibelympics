@@ -87,4 +87,41 @@ router.get('/templates', (req: Request, res: Response) => {
   res.json(getTemplates());
 });
 
+// Proxy external images to avoid CORS issues for download
+router.get('/proxy-image', async (req: Request, res: Response) => {
+  try {
+    const { url } = req.query;
+    
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    // Only allow proxying from known safe domains
+    const allowedDomains = [
+      'oaidalleapiprodscus.blob.core.windows.net',
+      'i.imgflip.com'
+    ];
+    
+    const urlObj = new URL(url);
+    if (!allowedDomains.some(domain => urlObj.hostname.includes(domain))) {
+      return res.status(403).json({ error: 'Domain not allowed' });
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch image' });
+    }
+
+    const buffer = await response.arrayBuffer();
+    const contentType = response.headers.get('content-type') || 'image/png';
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Image proxy error:', error);
+    res.status(500).json({ error: 'Failed to proxy image' });
+  }
+});
+
 export default router;

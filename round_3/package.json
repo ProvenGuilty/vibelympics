@@ -22,6 +22,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.21.0",
     "helmet": "^8.0.0",
+    "html2canvas": "^1.4.1",
     "openai": "^4.73.0",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",

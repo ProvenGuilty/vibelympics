@@ -1,0 +1,99 @@
+# ============================================
+# The Forge - Default .gitignore
+# Rename to .gitignore after copying to project
+# ============================================
+
+# -----------------------------------------
+# Secrets & Environment (CRITICAL)
+# -----------------------------------------
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials.json
+service-account.json
+
+# -----------------------------------------
+# IDE & Editor
+# -----------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# -----------------------------------------
+# Dependencies (add language-specific)
+# -----------------------------------------
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
+.env/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Go
+vendor/
+
+# -----------------------------------------
+# Build & Output
+# -----------------------------------------
+dist/
+build/
+out/
+*.log
+coverage/
+.nyc_output/
+
+# -----------------------------------------
+# Testing
+# -----------------------------------------
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
+# -----------------------------------------
+# Local Development
+# -----------------------------------------
+*.local
+*.db
+*.sqlite
+*.sqlite3
+data/
+logs/
+tmp/
+temp/
+
+# -----------------------------------------
+# OS Generated
+# -----------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

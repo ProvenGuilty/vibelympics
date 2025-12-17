@@ -101,9 +101,9 @@ export async function generateAIMeme(topic: string, style: string = 'general') {
     enhancedTopic = `${topic} (in the context of ${randomTheme})`;
   }
 
-  // Generate caption with GPT-4
+  // Generate caption with GPT-4o-mini
   const captionResponse = await getOpenAI().chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',
@@ -162,7 +162,7 @@ export async function generateTemplateMeme(templateId: string, topic: string) {
     .join(', ');
 
   const captionResponse = await getOpenAI().chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',

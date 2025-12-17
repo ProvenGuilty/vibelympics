@@ -14,17 +14,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "express": "^4.21.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.0",
     "helmet": "^8.0.0",
+    "openai": "^4.73.0",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
-    "openai": "^4.73.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0",
     "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.7.4",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.2",

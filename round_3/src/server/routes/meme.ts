@@ -48,9 +48,10 @@ router.post('/generate', async (req: Request, res: Response) => {
       ...meme,
       createdAt: new Date().toISOString()
     });
-  } catch (error) {
-    console.error('Meme generation error:', error);
-    res.status(500).json({ error: 'Failed to generate meme' });
+  } catch (error: any) {
+    console.error('Meme generation error:', error?.message || error);
+    console.error('Full error:', JSON.stringify(error, null, 2));
+    res.status(500).json({ error: error?.message || 'Failed to generate meme' });
   }
 });
 

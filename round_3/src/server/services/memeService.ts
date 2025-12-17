@@ -15,12 +15,12 @@ function getOpenAI(): OpenAI {
   return openai;
 }
 
-// Meme templates with text positioning
+// Meme templates with text positioning - using imgflip template IDs
 export const TEMPLATES = {
   drake: {
     name: 'Drake Approves',
     description: 'Drake disapproving then approving',
-    url: '/templates/drake.jpg',
+    url: 'https://i.imgflip.com/30b1gx.jpg',
     textAreas: [
       { position: 'top-right', label: 'Bad thing' },
       { position: 'bottom-right', label: 'Good thing' }
@@ -29,7 +29,7 @@ export const TEMPLATES = {
   distracted: {
     name: 'Distracted Boyfriend',
     description: 'Guy looking at another girl while girlfriend watches',
-    url: '/templates/distracted.jpg',
+    url: 'https://i.imgflip.com/1ur9b0.jpg',
     textAreas: [
       { position: 'left', label: 'Current thing' },
       { position: 'center', label: 'You' },
@@ -39,7 +39,7 @@ export const TEMPLATES = {
   thisisfine: {
     name: 'This Is Fine',
     description: 'Dog in burning room saying this is fine',
-    url: '/templates/thisisfine.jpg',
+    url: 'https://i.imgflip.com/wxica.jpg',
     textAreas: [
       { position: 'top', label: 'Situation' },
       { position: 'bottom', label: 'Response' }
@@ -48,7 +48,7 @@ export const TEMPLATES = {
   expandingbrain: {
     name: 'Expanding Brain',
     description: 'Brain getting bigger with each panel',
-    url: '/templates/expandingbrain.jpg',
+    url: 'https://i.imgflip.com/1jwhww.jpg',
     textAreas: [
       { position: '1', label: 'Basic' },
       { position: '2', label: 'Better' },
@@ -59,7 +59,7 @@ export const TEMPLATES = {
   changemymind: {
     name: 'Change My Mind',
     description: 'Steven Crowder at table with sign',
-    url: '/templates/changemymind.jpg',
+    url: 'https://i.imgflip.com/24y43o.jpg',
     textAreas: [
       { position: 'sign', label: 'Hot take' }
     ]
@@ -67,7 +67,7 @@ export const TEMPLATES = {
   twobuttons: {
     name: 'Two Buttons',
     description: 'Sweating guy choosing between two buttons',
-    url: '/templates/twobuttons.jpg',
+    url: 'https://i.imgflip.com/1g8my4.jpg',
     textAreas: [
       { position: 'left-button', label: 'Option A' },
       { position: 'right-button', label: 'Option B' }

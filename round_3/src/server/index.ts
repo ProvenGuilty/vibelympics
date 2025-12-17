@@ -29,7 +29,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:", "https://oaidalleapiprodscus.blob.core.windows.net"],
+      imgSrc: ["'self'", "data:", "blob:", "https://oaidalleapiprodscus.blob.core.windows.net", "https://i.imgflip.com"],
       connectSrc: ["'self'"],
     }
   }

@@ -7,9 +7,11 @@ import MemeGallery from './components/MemeGallery';
 export interface GeneratedMeme {
   id: string;
   imageUrl: string;
-  topText: string;
-  bottomText: string;
+  topText?: string;
+  bottomText?: string;
   template?: string;
+  templateId?: string;
+  captions?: Record<string, string>;
   createdAt: Date;
 }
 

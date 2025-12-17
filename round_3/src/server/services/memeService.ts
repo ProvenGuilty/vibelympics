@@ -161,6 +161,14 @@ export async function generateTemplateMeme(templateId: string, topic: string) {
     .map(area => `"${area.label}"`)
     .join(', ');
 
+  // Template-specific instructions
+  let templateInstructions = '';
+  if (templateId === 'changemymind') {
+    templateInstructions = `
+        - IMPORTANT: Do NOT include "Change my mind" in the text - the image already has that phrase on it
+        - Just write the controversial opinion/hot take that goes on the sign above "Change my mind"`;
+  }
+
   const captionResponse = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
@@ -172,7 +180,7 @@ export async function generateTemplateMeme(templateId: string, topic: string) {
         Rules:
         - Each text should be short (under 50 chars)
         - Be clever and match the meme format's typical humor
-        - Return JSON with keys matching the text area labels`
+        - Return JSON with keys matching the text area labels${templateInstructions}`
       },
       {
         role: 'user',

@@ -73,9 +73,11 @@ export default function MemeGenerator({
       onMemeGenerated({
         id: meme.id,
         imageUrl: meme.imageUrl || meme.templateUrl,
-        topText: meme.topText || meme.captions?.['Bad thing'] || '',
-        bottomText: meme.bottomText || meme.captions?.['Good thing'] || '',
+        topText: meme.topText || '',
+        bottomText: meme.bottomText || '',
         template: meme.templateName,
+        templateId: meme.templateId,
+        captions: meme.captions,
         createdAt: new Date()
       });
       

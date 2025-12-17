@@ -8,21 +8,9 @@ interface MemeGalleryProps {
 export default function MemeGallery({ memes }: MemeGalleryProps) {
   const { isCyberpunk } = useTheme();
 
-  const downloadMeme = async (meme: GeneratedMeme) => {
-    try {
-      const response = await fetch(meme.imageUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `meme-${meme.id}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-    }
+  const downloadMeme = (meme: GeneratedMeme) => {
+    // Open in new tab - CORS prevents direct fetch from OpenAI blob storage
+    window.open(meme.imageUrl, '_blank');
   };
 
   const cardClass = isCyberpunk

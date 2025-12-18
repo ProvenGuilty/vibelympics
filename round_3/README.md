@@ -22,9 +22,6 @@ docker build -t meme-gen-3000 .
 # Run (users provide their own keys via browser UI)
 docker run -p 8080:8080 meme-gen-3000
 
-# Or run with a shared fallback API key
-docker run -p 8080:8080 -e OPENAI_API_KEY=sk-your-key meme-gen-3000
-
 # Open http://localhost:8080
 ```
 
@@ -192,3 +189,11 @@ Keys are stored in your browser's `localStorage` and sent directly to OpenAI.
 ---
 
 *Built for Vibelympics 2025 Round 3* 🐙✨
+
+---
+
+## 🔨 Built With The Forge
+
+This entire project was built using **The Forge**, a development framework created and designed by **Shaun Robbins**. The Forge provides structure and guidelines for AI-assisted development, helping build code that is usable, scalable, portable, secure, and testable.
+
+🔗 **Use The Forge for your own projects:** [github.com/mrshaun13/supercharged/tree/main/the-forge](https://github.com/mrshaun13/supercharged/tree/main/the-forge)

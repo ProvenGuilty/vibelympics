@@ -36,17 +36,25 @@ router.post('/generate', async (req: Request, res: Response) => {
     }
 
     const { topic, style = 'general' } = req.body;
-    const userApiKey = req.headers['x-openai-api-key'] as string | undefined;
+    // Separate keys for text and image - NO fallback between them
+    const textApiKey = req.headers['x-openai-text-api-key'] as string | undefined;
+    const imageApiKey = req.headers['x-openai-image-api-key'] as string | undefined;
     
     if (!topic || typeof topic !== 'string') {
       return res.status(400).json({ error: 'Topic is required' });
     }
+
+    // Trim and validate - reject empty or whitespace-only topics
+    const trimmedTopic = topic.trim();
+    if (!trimmedTopic) {
+      return res.status(400).json({ error: 'Topic is required' });
+    }
     
-    if (topic.length > 500) {
+    if (trimmedTopic.length > 500) {
       return res.status(400).json({ error: 'Topic must be under 500 characters' });
     }
 
-    const meme = await generateAIMeme(topic, style, userApiKey);
+    const meme = await generateAIMeme(topic, style, textApiKey, imageApiKey);
     
     res.json({
       id: uuidv4(),
@@ -57,10 +65,10 @@ router.post('/generate', async (req: Request, res: Response) => {
     console.error('Meme generation error:', error?.message || error);
     
     // Return specific error for missing API key
-    if (error?.name === 'ApiKeyError' || error?.code === 'API_KEY_REQUIRED') {
+    if (error?.name === 'ApiKeyError') {
       return res.status(401).json({ 
         error: error.message,
-        code: 'API_KEY_REQUIRED'
+        code: error.code || 'API_KEY_REQUIRED'
       });
     }
     
@@ -86,13 +94,14 @@ router.post('/template', async (req: Request, res: Response) => {
     }
 
     const { template, topic, style = 'general' } = req.body;
-    const userApiKey = req.headers['x-openai-api-key'] as string | undefined;
+    // Text key only - NO fallback
+    const textApiKey = req.headers['x-openai-text-api-key'] as string | undefined;
     
     if (!template || !topic) {
       return res.status(400).json({ error: 'Template and topic are required' });
     }
 
-    const meme = await generateTemplateMeme(template, topic, style, userApiKey);
+    const meme = await generateTemplateMeme(template, topic, style, textApiKey);
     
     res.json({
       id: uuidv4(),
@@ -103,10 +112,10 @@ router.post('/template', async (req: Request, res: Response) => {
     console.error('Template meme error:', error);
     
     // Return specific error for missing API key
-    if (error?.name === 'ApiKeyError' || error?.code === 'API_KEY_REQUIRED') {
+    if (error?.name === 'ApiKeyError') {
       return res.status(401).json({ 
         error: error.message,
-        code: 'API_KEY_REQUIRED'
+        code: error.code || 'API_KEY_REQUIRED'
       });
     }
     

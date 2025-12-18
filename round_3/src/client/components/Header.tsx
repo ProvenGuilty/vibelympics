@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import Linky from './Linky';
+import ApiKeySettingsModal from './ApiKeySettingsModal';
 
 export default function Header() {
   const { isCyberpunk } = useTheme();
+  const [showApiKeySettings, setShowApiKeySettings] = useState(false);
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-500 ${
@@ -36,6 +39,17 @@ export default function Header() {
           
           {/* Right: Links */}
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowApiKeySettings(true)}
+              className={`px-4 py-2 rounded-lg transition-all text-xl ${
+                isCyberpunk 
+                  ? 'bg-cyan-900/50 hover:bg-cyan-800/50 border border-cyan-500 shadow-[0_0_10px_rgba(0,255,255,0.3)]' 
+                  : 'bg-slate-700 hover:bg-slate-600'
+              }`}
+              title="API Key Settings"
+            >
+              🔑
+            </button>
             <a
               href="https://github.com/ProvenGuilty/vibelympics/tree/main/round_3"
               target="_blank"
@@ -50,6 +64,13 @@ export default function Header() {
               🐱
             </a>
           </div>
+
+          {/* API Key Settings Modal */}
+          <ApiKeySettingsModal
+            isOpen={showApiKeySettings}
+            onClose={() => setShowApiKeySettings(false)}
+            onSave={() => {}}
+          />
         </div>
       </div>
     </header>

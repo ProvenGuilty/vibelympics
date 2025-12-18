@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { GeneratedMeme } from '../App';
-import ApiKeyModal from './ApiKeyModal';
-
-const API_KEY_STORAGE_KEY = 'meme-generator-openai-key';
+import ApiKeySettingsModal, { API_KEY_TEXT_STORAGE_KEY, API_KEY_IMAGE_STORAGE_KEY } from './ApiKeySettingsModal';
 
 interface MemeGeneratorProps {
   onMemeGenerated: (meme: GeneratedMeme) => void;
@@ -120,27 +118,31 @@ export default function MemeGenerator({
   const [selectedTemplate, setSelectedTemplate] = useState('drake');
   const [error, setError] = useState<string | null>(null);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
   const [apiKeyError, setApiKeyError] = useState<string | undefined>(undefined);
+  const [missingKeyType, setMissingKeyType] = useState<'text' | 'image' | 'both' | null>(null);
 
-  // Load API key from localStorage on mount
-  useEffect(() => {
-    const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-    if (storedKey) {
-      setApiKey(storedKey);
-    }
-  }, []);
-
-  const handleApiKeySubmit = (newApiKey: string) => {
-    localStorage.setItem(API_KEY_STORAGE_KEY, newApiKey);
-    setApiKey(newApiKey);
-    setShowApiKeyModal(false);
-    setApiKeyError(undefined);
-    // Auto-retry generation after setting key
-    setTimeout(() => handleGenerate(newApiKey), 100);
+  // Helper to get the appropriate API keys - NO fallback between keys
+  const getApiKeys = () => {
+    const textKey = localStorage.getItem(API_KEY_TEXT_STORAGE_KEY);
+    const imageKey = localStorage.getItem(API_KEY_IMAGE_STORAGE_KEY);
+    
+    // Return only explicitly set keys - no fallback
+    return {
+      textKey: textKey || null,
+      imageKey: imageKey || null
+    };
   };
 
-  const handleGenerate = async (overrideApiKey?: string) => {
+  const handleApiKeySaved = () => {
+    // Keys are saved by the modal itself, just close and retry
+    setShowApiKeyModal(false);
+    setApiKeyError(undefined);
+    setMissingKeyType(null);
+    // Auto-retry generation after setting key
+    setTimeout(() => handleGenerate(), 100);
+  };
+
+  const handleGenerate = async () => {
     if (!topic.trim()) {
       setError('Please enter a topic');
       return;
@@ -155,10 +157,15 @@ export default function MemeGenerator({
         ? { topic, style }
         : { template: selectedTemplate, topic, style };
 
+      const { textKey, imageKey } = getApiKeys();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const keyToUse = overrideApiKey || apiKey;
-      if (keyToUse) {
-        headers['X-OpenAI-API-Key'] = keyToUse;
+      
+      // Send separate keys for text and image generation
+      if (textKey) {
+        headers['X-OpenAI-Text-API-Key'] = textKey;
+      }
+      if (imageKey) {
+        headers['X-OpenAI-Image-API-Key'] = imageKey;
       }
 
       const response = await fetch(endpoint, {
@@ -171,12 +178,25 @@ export default function MemeGenerator({
         const data = await response.json();
         
         // Check for API key errors
-        if (data.code === 'API_KEY_REQUIRED' || data.code === 'API_KEY_INVALID') {
+        if (data.code === 'API_KEY_REQUIRED' || data.code === 'TEXT_API_KEY_REQUIRED' || 
+            data.code === 'IMAGE_API_KEY_REQUIRED' || data.code === 'API_KEY_INVALID') {
           setIsGenerating(false);
-          setApiKeyError(data.code === 'API_KEY_INVALID' 
-            ? 'Invalid API key. Please check your key and try again.'
-            : undefined
-          );
+          
+          // Determine which key is missing
+          if (data.code === 'TEXT_API_KEY_REQUIRED') {
+            setMissingKeyType('text');
+            setApiKeyError('Text generation API key is required.');
+          } else if (data.code === 'IMAGE_API_KEY_REQUIRED') {
+            setMissingKeyType('image');
+            setApiKeyError('Image generation API key is required.');
+          } else if (data.code === 'API_KEY_INVALID') {
+            setMissingKeyType('both');
+            setApiKeyError('Invalid API key. Please check your key and try again.');
+          } else {
+            setMissingKeyType('both');
+            setApiKeyError(undefined);
+          }
+          
           setShowApiKeyModal(true);
           return;
         }
@@ -443,14 +463,16 @@ export default function MemeGenerator({
         </div>
       )}
 
-      {/* API Key Modal */}
-      <ApiKeyModal
+      {/* API Key Settings Modal (for missing key prompts) */}
+      <ApiKeySettingsModal
         isOpen={showApiKeyModal}
         onClose={() => {
           setShowApiKeyModal(false);
           setApiKeyError(undefined);
+          setMissingKeyType(null);
         }}
-        onSubmit={handleApiKeySubmit}
+        onSave={handleApiKeySaved}
+        requiredKeyType={missingKeyType}
         errorMessage={apiKeyError}
       />
 

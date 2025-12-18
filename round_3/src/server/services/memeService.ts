@@ -1,38 +1,61 @@
 import OpenAI from 'openai';
 
 // Lazy initialization to avoid crash on startup without API key
-let openai: OpenAI | null = null;
-let currentApiKey: string | null = null;
+let textOpenai: OpenAI | null = null;
+let imageOpenai: OpenAI | null = null;
+let currentTextApiKey: string | null = null;
+let currentImageApiKey: string | null = null;
 
 // Custom error class for API key issues
 export class ApiKeyError extends Error {
   code: string;
-  constructor(message: string) {
+  constructor(message: string, code: string = 'API_KEY_REQUIRED') {
     super(message);
     this.name = 'ApiKeyError';
-    this.code = 'API_KEY_REQUIRED';
+    this.code = code;
   }
 }
 
-function getOpenAI(userApiKey?: string): OpenAI {
+function getOpenAIForText(userApiKey?: string): OpenAI {
   const apiKey = userApiKey || process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
-    throw new ApiKeyError('OpenAI API key is required. Please provide your API key to generate memes.');
+    throw new ApiKeyError('OpenAI API key for text generation is required.', 'TEXT_API_KEY_REQUIRED');
   }
   
   // If user provided a key or key changed, create new instance
-  if (userApiKey || apiKey !== currentApiKey) {
-    currentApiKey = apiKey;
-    openai = new OpenAI({ apiKey });
+  if (userApiKey || apiKey !== currentTextApiKey) {
+    currentTextApiKey = apiKey;
+    textOpenai = new OpenAI({ apiKey });
   }
   
-  if (!openai) {
-    openai = new OpenAI({ apiKey });
-    currentApiKey = apiKey;
+  if (!textOpenai) {
+    textOpenai = new OpenAI({ apiKey });
+    currentTextApiKey = apiKey;
   }
   
-  return openai;
+  return textOpenai;
+}
+
+function getOpenAIForImage(userApiKey?: string): OpenAI {
+  const apiKey = userApiKey || process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    throw new ApiKeyError('OpenAI API key for image generation is required.', 'IMAGE_API_KEY_REQUIRED');
+  }
+  
+  // If user provided a key or key changed, create new instance
+  if (userApiKey || apiKey !== currentImageApiKey) {
+    currentImageApiKey = apiKey;
+    imageOpenai = new OpenAI({ apiKey });
+  }
+  
+  if (!imageOpenai) {
+    imageOpenai = new OpenAI({ apiKey });
+    currentImageApiKey = apiKey;
+  }
+  
+  return imageOpenai;
 }
 
 // Meme templates with text positioning - using imgflip template IDs
@@ -130,7 +153,7 @@ const SECURITY_THEMES = [
   'serverless cold starts'
 ];
 
-export async function generateAIMeme(topic: string, style: string = 'general', userApiKey?: string) {
+export async function generateAIMeme(topic: string, style: string = 'general', textApiKey?: string, imageApiKey?: string) {
   // Enhance topic for security style
   let enhancedTopic = topic;
   if (style === 'security') {
@@ -138,8 +161,8 @@ export async function generateAIMeme(topic: string, style: string = 'general', u
     enhancedTopic = `${topic} (in the context of ${randomTheme})`;
   }
 
-  // Generate caption with GPT-4o-mini
-  const captionResponse = await getOpenAI(userApiKey).chat.completions.create({
+  // Generate caption with GPT-4o-mini (uses text API key)
+  const captionResponse = await getOpenAIForText(textApiKey).chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
@@ -163,7 +186,7 @@ export async function generateAIMeme(topic: string, style: string = 'general', u
 
   const captionData = JSON.parse(captionResponse.choices[0].message.content || '{}');
 
-  // Generate image with DALL-E 3
+  // Generate image with DALL-E 3 (uses image API key)
   const imageStyleAddition = IMAGE_STYLE_INSTRUCTIONS[style] || '';
   const imagePrompt = `A funny meme image about ${enhancedTopic}. 
     Style: colorful, exaggerated expressions, meme-worthy, internet humor aesthetic.
@@ -171,7 +194,7 @@ export async function generateAIMeme(topic: string, style: string = 'general', u
     Do NOT include any text in the image - just the visual scene.
     Make it suitable for a professional audience but still funny.`;
 
-  const imageResponse = await getOpenAI(userApiKey).images.generate({
+  const imageResponse = await getOpenAIForImage(imageApiKey).images.generate({
     model: 'dall-e-3',
     prompt: imagePrompt,
     n: 1,
@@ -188,7 +211,7 @@ export async function generateAIMeme(topic: string, style: string = 'general', u
   };
 }
 
-export async function generateTemplateMeme(templateId: string, topic: string, style: string = 'general', userApiKey?: string) {
+export async function generateTemplateMeme(templateId: string, topic: string, style: string = 'general', textApiKey?: string) {
   const template = TEMPLATES[templateId as keyof typeof TEMPLATES];
   
   if (!template) {
@@ -217,7 +240,8 @@ export async function generateTemplateMeme(templateId: string, topic: string, st
 
   const styleInstruction = HUMOR_STYLE_INSTRUCTIONS[style] || HUMOR_STYLE_INSTRUCTIONS.general;
 
-  const captionResponse = await getOpenAI(userApiKey).chat.completions.create({
+  // Template memes only need text generation (uses text API key)
+  const captionResponse = await getOpenAIForText(textApiKey).chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {

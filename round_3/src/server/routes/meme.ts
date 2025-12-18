@@ -55,7 +55,8 @@ router.post('/generate', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Meme generation error:', error?.message || error);
     console.error('Full error:', JSON.stringify(error, null, 2));
-    res.status(500).json({ error: error?.message || 'Failed to generate meme' });
+    // Generic error for client - don't expose internal details
+    res.status(500).json({ error: 'Failed to generate meme. Please try again.' });
   }
 });
 
@@ -107,7 +108,11 @@ router.get('/proxy-image', async (req: Request, res: Response) => {
     ];
     
     const urlObj = new URL(url);
-    if (!allowedDomains.some(domain => urlObj.hostname.includes(domain))) {
+    // Use exact match or proper suffix matching to prevent SSRF bypass
+    const isAllowed = allowedDomains.some(domain => 
+      urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
+    );
+    if (!isAllowed) {
       return res.status(403).json({ error: 'Domain not allowed' });
     }
 

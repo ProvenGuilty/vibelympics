@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import crypto from 'crypto';
 import { pino } from 'pino';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,21 +23,38 @@ const logger = pino({
 const app = express();
 const PORT = parseInt(process.env.PORT || '8080', 10);
 
-// Security middleware
+// Generate CSP nonce per request
+app.use((req, res, next) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
+// Security middleware with nonce-based CSP
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", (req, res) => `'nonce-${(res as express.Response).locals.nonce}'`],
+      styleSrc: ["'self'", (req, res) => `'nonce-${(res as express.Response).locals.nonce}'`],
       imgSrc: ["'self'", "data:", "blob:", "https://oaidalleapiprodscus.blob.core.windows.net", "https://i.imgflip.com"],
       connectSrc: ["'self'"],
     }
   }
 }));
 
-// CORS
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:8080').split(',');
+// CORS with origin validation
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:8080')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(origin => {
+    try {
+      new URL(origin);
+      return true;
+    } catch {
+      logger.warn(`Invalid CORS origin ignored: ${origin}`);
+      return false;
+    }
+  });
 app.use(cors({
   origin: allowedOrigins,
   credentials: true

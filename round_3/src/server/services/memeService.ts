@@ -17,7 +17,8 @@ export class ApiKeyError extends Error {
 }
 
 function getOpenAIForText(userApiKey?: string): OpenAI {
-  const apiKey = userApiKey || process.env.OPENAI_API_KEY;
+  // Priority: user-provided key > OPENAI_TEXT_API_KEY > OPENAI_API_KEY (generic fallback)
+  const apiKey = userApiKey || process.env.OPENAI_TEXT_API_KEY || process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
     throw new ApiKeyError('OpenAI API key for text generation is required.', 'TEXT_API_KEY_REQUIRED');
@@ -38,7 +39,8 @@ function getOpenAIForText(userApiKey?: string): OpenAI {
 }
 
 function getOpenAIForImage(userApiKey?: string): OpenAI {
-  const apiKey = userApiKey || process.env.OPENAI_API_KEY;
+  // Priority: user-provided key > OPENAI_IMAGE_API_KEY > OPENAI_API_KEY (generic fallback)
+  const apiKey = userApiKey || process.env.OPENAI_IMAGE_API_KEY || process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
     throw new ApiKeyError('OpenAI API key for image generation is required.', 'IMAGE_API_KEY_REQUIRED');

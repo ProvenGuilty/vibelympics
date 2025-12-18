@@ -7,8 +7,6 @@
    Your memes, powered by AI
 ```
 
-> 🎮 **Easter Egg Challenge:** Can you figure out how to get into **31337 M0D3**?! 👾
-
 ---
 
 ## 🚀 Quick Start
@@ -21,11 +19,16 @@ git clone https://github.com/ProvenGuilty/vibelympics.git
 cd vibelympics/round_3
 docker build -t meme-gen-3000 .
 
-# Run (requires OPENAI_API_KEY)
+# Run (with shared API key)
 docker run -p 8080:8080 -e OPENAI_API_KEY=sk-your-key meme-gen-3000
+
+# Or run without a key - users will be prompted to enter their own
+docker run -p 8080:8080 meme-gen-3000
 
 # Open http://localhost:8080
 ```
+
+> **Note:** If no `OPENAI_API_KEY` is provided, users will be prompted to enter their own API key in the browser. Keys are stored in the browser's localStorage for the session.
 
 ### Option 2: Local Development
 
@@ -62,7 +65,7 @@ npm run dev
 
 ---
 
-## 🎨 Meme Modes
+## 🎨 Meme Creation
 
 ### AI Generated
 Uses DALL-E 3 to create completely original meme images with GPT-4 generated captions.

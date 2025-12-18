@@ -36,6 +36,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     }
 
     const { topic, style = 'general' } = req.body;
+    const userApiKey = req.headers['x-openai-api-key'] as string | undefined;
     
     if (!topic || typeof topic !== 'string') {
       return res.status(400).json({ error: 'Topic is required' });
@@ -45,7 +46,7 @@ router.post('/generate', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Topic must be under 500 characters' });
     }
 
-    const meme = await generateAIMeme(topic, style);
+    const meme = await generateAIMeme(topic, style, userApiKey);
     
     res.json({
       id: uuidv4(),
@@ -54,7 +55,23 @@ router.post('/generate', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Meme generation error:', error?.message || error);
-    console.error('Full error:', JSON.stringify(error, null, 2));
+    
+    // Return specific error for missing API key
+    if (error?.name === 'ApiKeyError' || error?.code === 'API_KEY_REQUIRED') {
+      return res.status(401).json({ 
+        error: error.message,
+        code: 'API_KEY_REQUIRED'
+      });
+    }
+    
+    // Check for invalid API key errors from OpenAI
+    if (error?.status === 401 || error?.code === 'invalid_api_key') {
+      return res.status(401).json({
+        error: 'Invalid API key. Please check your OpenAI API key and try again.',
+        code: 'API_KEY_INVALID'
+      });
+    }
+    
     // Generic error for client - don't expose internal details
     res.status(500).json({ error: 'Failed to generate meme. Please try again.' });
   }
@@ -69,20 +86,38 @@ router.post('/template', async (req: Request, res: Response) => {
     }
 
     const { template, topic, style = 'general' } = req.body;
+    const userApiKey = req.headers['x-openai-api-key'] as string | undefined;
     
     if (!template || !topic) {
       return res.status(400).json({ error: 'Template and topic are required' });
     }
 
-    const meme = await generateTemplateMeme(template, topic, style);
+    const meme = await generateTemplateMeme(template, topic, style, userApiKey);
     
     res.json({
       id: uuidv4(),
       ...meme,
       createdAt: new Date().toISOString()
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Template meme error:', error);
+    
+    // Return specific error for missing API key
+    if (error?.name === 'ApiKeyError' || error?.code === 'API_KEY_REQUIRED') {
+      return res.status(401).json({ 
+        error: error.message,
+        code: 'API_KEY_REQUIRED'
+      });
+    }
+    
+    // Check for invalid API key errors from OpenAI
+    if (error?.status === 401 || error?.code === 'invalid_api_key') {
+      return res.status(401).json({
+        error: 'Invalid API key. Please check your OpenAI API key and try again.',
+        code: 'API_KEY_INVALID'
+      });
+    }
+    
     res.status(500).json({ error: 'Failed to generate template meme' });
   }
 });

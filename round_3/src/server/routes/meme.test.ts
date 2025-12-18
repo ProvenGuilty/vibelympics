@@ -2,13 +2,34 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 
-vi.mock('../services/memeService.js', () => ({
-  generateAIMeme: vi.fn(),
-  generateTemplateMeme: vi.fn(),
-  getTemplates: vi.fn(() => [
-    { id: 'drake', name: 'Drake Approves', description: 'Drake meme', url: 'https://example.com/drake.jpg', textAreas: [] }
-  ])
-}));
+class MockApiKeyError extends Error {
+  code: string;
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApiKeyError';
+    this.code = 'API_KEY_REQUIRED';
+  }
+}
+
+vi.mock('../services/memeService.js', () => {
+  class ApiKeyError extends Error {
+    code: string;
+    constructor(message: string) {
+      super(message);
+      this.name = 'ApiKeyError';
+      this.code = 'API_KEY_REQUIRED';
+    }
+  }
+  
+  return {
+    generateAIMeme: vi.fn(),
+    generateTemplateMeme: vi.fn(),
+    getTemplates: vi.fn(() => [
+      { id: 'drake', name: 'Drake Approves', description: 'Drake meme', url: 'https://example.com/drake.jpg', textAreas: [] }
+    ]),
+    ApiKeyError
+  };
+});
 
 import memeRoutes, { clearRateLimits } from './meme.js';
 import { generateAIMeme, generateTemplateMeme, getTemplates } from '../services/memeService.js';
@@ -77,7 +98,7 @@ describe('Meme Routes', () => {
         .send({ topic: 'testing' });
       
       expect(response.status).toBe(200);
-      expect(generateAIMeme).toHaveBeenCalledWith('testing', 'general');
+      expect(generateAIMeme).toHaveBeenCalledWith('testing', 'general', undefined);
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('imageUrl', 'https://example.com/meme.jpg');
       expect(response.body).toHaveProperty('createdAt');
@@ -98,7 +119,52 @@ describe('Meme Routes', () => {
         .send({ topic: 'CVEs', style: 'security' });
       
       expect(response.status).toBe(200);
-      expect(generateAIMeme).toHaveBeenCalledWith('CVEs', 'security');
+      expect(generateAIMeme).toHaveBeenCalledWith('CVEs', 'security', undefined);
+    });
+
+    it('should pass user-provided API key to generateAIMeme', async () => {
+      const mockMeme = {
+        imageUrl: 'https://example.com/meme.jpg',
+        topText: 'Top',
+        bottomText: 'Bottom',
+        style: 'general',
+        type: 'ai-generated'
+      };
+      vi.mocked(generateAIMeme).mockResolvedValue(mockMeme);
+
+      const response = await request(app)
+        .post('/api/meme/generate')
+        .set('X-OpenAI-API-Key', 'sk-test-key-123')
+        .send({ topic: 'testing' });
+      
+      expect(response.status).toBe(200);
+      expect(generateAIMeme).toHaveBeenCalledWith('testing', 'general', 'sk-test-key-123');
+    });
+
+    it('should return 401 with API_KEY_REQUIRED code when API key is missing', async () => {
+      vi.mocked(generateAIMeme).mockRejectedValue(new MockApiKeyError('API key required'));
+
+      const response = await request(app)
+        .post('/api/meme/generate')
+        .send({ topic: 'test' });
+      
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty('code', 'API_KEY_REQUIRED');
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should return 401 with API_KEY_INVALID code for invalid API key', async () => {
+      const invalidKeyError = new Error('Invalid API key') as any;
+      invalidKeyError.status = 401;
+      vi.mocked(generateAIMeme).mockRejectedValue(invalidKeyError);
+
+      const response = await request(app)
+        .post('/api/meme/generate')
+        .set('X-OpenAI-API-Key', 'sk-invalid-key')
+        .send({ topic: 'test' });
+      
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty('code', 'API_KEY_INVALID');
     });
 
     it('should return 500 on service error', async () => {
@@ -147,7 +213,7 @@ describe('Meme Routes', () => {
         .send({ template: 'drake', topic: 'refactoring' });
       
       expect(response.status).toBe(200);
-      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'refactoring', 'general');
+      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'refactoring', 'general', undefined);
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('templateId', 'drake');
       expect(response.body).toHaveProperty('createdAt');
@@ -168,7 +234,52 @@ describe('Meme Routes', () => {
         .send({ template: 'drake', topic: 'CVEs', style: 'security' });
       
       expect(response.status).toBe(200);
-      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'CVEs', 'security');
+      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'CVEs', 'security', undefined);
+    });
+
+    it('should pass user-provided API key to generateTemplateMeme', async () => {
+      const mockMeme = {
+        templateId: 'drake',
+        templateUrl: 'https://example.com/drake.jpg',
+        templateName: 'Drake Approves',
+        captions: { 'Bad thing': 'Old code', 'Good thing': 'New code' },
+        type: 'template'
+      };
+      vi.mocked(generateTemplateMeme).mockResolvedValue(mockMeme);
+
+      const response = await request(app)
+        .post('/api/meme/template')
+        .set('X-OpenAI-API-Key', 'sk-test-key-456')
+        .send({ template: 'drake', topic: 'testing' });
+      
+      expect(response.status).toBe(200);
+      expect(generateTemplateMeme).toHaveBeenCalledWith('drake', 'testing', 'general', 'sk-test-key-456');
+    });
+
+    it('should return 401 with API_KEY_REQUIRED code when API key is missing', async () => {
+      vi.mocked(generateTemplateMeme).mockRejectedValue(new MockApiKeyError('API key required'));
+
+      const response = await request(app)
+        .post('/api/meme/template')
+        .send({ template: 'drake', topic: 'test' });
+      
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty('code', 'API_KEY_REQUIRED');
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should return 401 with API_KEY_INVALID code for invalid API key', async () => {
+      const invalidKeyError = new Error('Invalid API key') as any;
+      invalidKeyError.status = 401;
+      vi.mocked(generateTemplateMeme).mockRejectedValue(invalidKeyError);
+
+      const response = await request(app)
+        .post('/api/meme/template')
+        .set('X-OpenAI-API-Key', 'sk-invalid-key')
+        .send({ template: 'drake', topic: 'test' });
+      
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty('code', 'API_KEY_INVALID');
     });
 
     it('should return 500 on service error', async () => {

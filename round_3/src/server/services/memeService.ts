@@ -2,16 +2,36 @@ import OpenAI from 'openai';
 
 // Lazy initialization to avoid crash on startup without API key
 let openai: OpenAI | null = null;
+let currentApiKey: string | null = null;
 
-function getOpenAI(): OpenAI {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+// Custom error class for API key issues
+export class ApiKeyError extends Error {
+  code: string;
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApiKeyError';
+    this.code = 'API_KEY_REQUIRED';
   }
+}
+
+function getOpenAI(userApiKey?: string): OpenAI {
+  const apiKey = userApiKey || process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    throw new ApiKeyError('OpenAI API key is required. Please provide your API key to generate memes.');
+  }
+  
+  // If user provided a key or key changed, create new instance
+  if (userApiKey || apiKey !== currentApiKey) {
+    currentApiKey = apiKey;
+    openai = new OpenAI({ apiKey });
+  }
+  
+  if (!openai) {
+    openai = new OpenAI({ apiKey });
+    currentApiKey = apiKey;
+  }
+  
   return openai;
 }
 
@@ -110,7 +130,7 @@ const SECURITY_THEMES = [
   'serverless cold starts'
 ];
 
-export async function generateAIMeme(topic: string, style: string = 'general') {
+export async function generateAIMeme(topic: string, style: string = 'general', userApiKey?: string) {
   // Enhance topic for security style
   let enhancedTopic = topic;
   if (style === 'security') {
@@ -119,7 +139,7 @@ export async function generateAIMeme(topic: string, style: string = 'general') {
   }
 
   // Generate caption with GPT-4o-mini
-  const captionResponse = await getOpenAI().chat.completions.create({
+  const captionResponse = await getOpenAI(userApiKey).chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
@@ -151,7 +171,7 @@ export async function generateAIMeme(topic: string, style: string = 'general') {
     Do NOT include any text in the image - just the visual scene.
     Make it suitable for a professional audience but still funny.`;
 
-  const imageResponse = await getOpenAI().images.generate({
+  const imageResponse = await getOpenAI(userApiKey).images.generate({
     model: 'dall-e-3',
     prompt: imagePrompt,
     n: 1,
@@ -168,7 +188,7 @@ export async function generateAIMeme(topic: string, style: string = 'general') {
   };
 }
 
-export async function generateTemplateMeme(templateId: string, topic: string, style: string = 'general') {
+export async function generateTemplateMeme(templateId: string, topic: string, style: string = 'general', userApiKey?: string) {
   const template = TEMPLATES[templateId as keyof typeof TEMPLATES];
   
   if (!template) {
@@ -197,7 +217,7 @@ export async function generateTemplateMeme(templateId: string, topic: string, st
 
   const styleInstruction = HUMOR_STYLE_INSTRUCTIONS[style] || HUMOR_STYLE_INSTRUCTIONS.general;
 
-  const captionResponse = await getOpenAI().chat.completions.create({
+  const captionResponse = await getOpenAI(userApiKey).chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {

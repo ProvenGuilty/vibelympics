@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { GeneratedMeme } from '../App';
+import ApiKeyModal from './ApiKeyModal';
+
+const API_KEY_STORAGE_KEY = 'meme-generator-openai-key';
 
 interface MemeGeneratorProps {
   onMemeGenerated: (meme: GeneratedMeme) => void;
@@ -116,8 +119,28 @@ export default function MemeGenerator({
   const [topic, setTopic] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('drake');
   const [error, setError] = useState<string | null>(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKeyError, setApiKeyError] = useState<string | undefined>(undefined);
 
-  const handleGenerate = async () => {
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+    if (storedKey) {
+      setApiKey(storedKey);
+    }
+  }, []);
+
+  const handleApiKeySubmit = (newApiKey: string) => {
+    localStorage.setItem(API_KEY_STORAGE_KEY, newApiKey);
+    setApiKey(newApiKey);
+    setShowApiKeyModal(false);
+    setApiKeyError(undefined);
+    // Auto-retry generation after setting key
+    setTimeout(() => handleGenerate(newApiKey), 100);
+  };
+
+  const handleGenerate = async (overrideApiKey?: string) => {
     if (!topic.trim()) {
       setError('Please enter a topic');
       return;
@@ -132,14 +155,32 @@ export default function MemeGenerator({
         ? { topic, style }
         : { template: selectedTemplate, topic, style };
 
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const keyToUse = overrideApiKey || apiKey;
+      if (keyToUse) {
+        headers['X-OpenAI-API-Key'] = keyToUse;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body)
       });
 
       if (!response.ok) {
         const data = await response.json();
+        
+        // Check for API key errors
+        if (data.code === 'API_KEY_REQUIRED' || data.code === 'API_KEY_INVALID') {
+          setIsGenerating(false);
+          setApiKeyError(data.code === 'API_KEY_INVALID' 
+            ? 'Invalid API key. Please check your key and try again.'
+            : undefined
+          );
+          setShowApiKeyModal(true);
+          return;
+        }
+        
         throw new Error(data.error || 'Failed to generate meme');
       }
 
@@ -402,9 +443,20 @@ export default function MemeGenerator({
         </div>
       )}
 
+      {/* API Key Modal */}
+      <ApiKeyModal
+        isOpen={showApiKeyModal}
+        onClose={() => {
+          setShowApiKeyModal(false);
+          setApiKeyError(undefined);
+        }}
+        onSubmit={handleApiKeySubmit}
+        errorMessage={apiKeyError}
+      />
+
       {/* Generate Button */}
       <button
-        onClick={handleGenerate}
+        onClick={() => handleGenerate()}
         disabled={isGenerating}
         className={`w-full py-4 rounded-lg font-bold text-lg transition-all ${buttonClass} ${
           isGenerating ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'
